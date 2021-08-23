@@ -33,7 +33,6 @@ func Save(s storage.Repository) func(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		setBadResponse(w)
-		return
 	}
 }
 
@@ -54,7 +53,6 @@ func Get(s storage.Repository) func(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		setBadResponse(w)
-		return
 	}
 }
 
