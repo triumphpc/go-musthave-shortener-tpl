@@ -24,8 +24,8 @@ func Save(s storage.Repository) func(w http.ResponseWriter, r *http.Request) {
 					w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 					w.WriteHeader(http.StatusCreated)
 
-					slUrl := fmt.Sprintf("%s/%s", Host, string(sl))
-					_, err = w.Write([]byte(slUrl))
+					slURL := fmt.Sprintf("%s/%s", Host, string(sl))
+					_, err = w.Write([]byte(slURL))
 					if err == nil {
 						return
 					}
