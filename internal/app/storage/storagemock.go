@@ -22,12 +22,12 @@ func (s *MockStorage) GenerateMockData() {
 func (s *MockStorage) LinkBy(sl ShortLink) (string, error) {
 	if s.data == nil {
 
-		return "", ErrUrlNotFound
+		return "", ErrURLNotFound
 	}
 
 	l, ok := s.data[sl]
 	if !ok {
-		return l, ErrUrlNotFound
+		return l, ErrURLNotFound
 	}
 	return l, nil
 }
