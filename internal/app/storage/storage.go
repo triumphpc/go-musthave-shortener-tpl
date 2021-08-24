@@ -19,18 +19,18 @@ type Repository interface {
 	Save(url string) (sl ShortLink)
 }
 
-// ErrUrlNotFound error by package level
-var ErrUrlNotFound = errors.New("url not found")
+// ErrURLNotFound error by package level
+var ErrURLNotFound = errors.New("url not found")
 
 // LinkBy implement interface for get data from storage
 func (s *Storage) LinkBy(sl ShortLink) (string, error) {
 	if s.data == nil {
-		return "", ErrUrlNotFound
+		return "", ErrURLNotFound
 	}
 
 	l, ok := s.data[sl]
 	if !ok {
-		return l, ErrUrlNotFound
+		return l, ErrURLNotFound
 	}
 	return l, nil
 }
