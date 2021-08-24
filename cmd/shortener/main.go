@@ -1,22 +1,48 @@
 package main
 
 import (
+	"context"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
 	// Allocation storage for urls
-	s := make(storage.Storage)
+	h := handlers.Handler{}
+
 	// Make Routes
 	rtr := mux.NewRouter()
-	rtr.HandleFunc("/{id:.+}", handlers.Get(s))
-	rtr.HandleFunc("/", handlers.Save(s))
+	rtr.HandleFunc("/{id:.+}", h.Get)
+	rtr.HandleFunc("/", h.Save)
 	http.Handle("/", rtr)
 
+	// context with cancel func
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+
 	// Init server
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	srv := &http.Server{Addr: ":8080"}
+	// Goroutine
+	go func() {
+		log.Fatal(srv.ListenAndServe())
+	}()
+	log.Print("The service is ready to listen and serve.")
+
+	// Add context for Graceful shutdown
+	killSignal := <-interrupt
+	switch killSignal {
+	case os.Interrupt:
+		log.Print("Got SIGINT...")
+	case syscall.SIGTERM:
+		log.Print("Got SIGTERM...")
+	}
+
+	log.Print("The service is shutting down...")
+	srv.Shutdown(context.Background())
+	log.Print("Done")
 }

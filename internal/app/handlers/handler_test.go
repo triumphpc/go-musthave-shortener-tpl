@@ -14,10 +14,10 @@ import (
 
 func TestHandler(t *testing.T) {
 	// Allocation storage for urls
-	s := make(storage.MockStorage)
-	s.Save("http://yandex.ru")
-	s.Save("http://google.ru")
-	s.Save("http://localhost")
+	h := Handler{}
+	s := storage.MockStorage{}
+	s.GenerateMockData()
+	h.s = &s
 
 	type want struct {
 		code        int
@@ -44,7 +44,7 @@ func TestHandler(t *testing.T) {
 		// implement all tests
 		{
 			name:    "Test Save handler #1",
-			handler: Save(s),
+			handler: h.Save,
 			request: request{
 				method:    http.MethodPost,
 				target:    "/",
@@ -60,7 +60,7 @@ func TestHandler(t *testing.T) {
 		},
 		{
 			name:    "Test Save handler #2",
-			handler: Save(s),
+			handler: h.Save,
 			request: request{
 				method: http.MethodPost,
 				target: "/",
@@ -75,7 +75,7 @@ func TestHandler(t *testing.T) {
 		},
 		{
 			name:    "Test Get handler #1",
-			handler: Get(s),
+			handler: h.Get,
 			request: request{
 				method: http.MethodGet,
 				target: "/xxx",
@@ -90,10 +90,10 @@ func TestHandler(t *testing.T) {
 		},
 		{
 			name:    "Test Get handler #2",
-			handler: Get(s),
+			handler: h.Get,
 			request: request{
 				method: http.MethodGet,
-				target: "/GMWJGSAPGA",
+				target: "/GMWJGSAPGA_test_1",
 				path:   "/{id:.+}",
 			},
 			want: want{
@@ -104,7 +104,7 @@ func TestHandler(t *testing.T) {
 		},
 		{
 			name:    "Test Get handler #3",
-			handler: Get(s),
+			handler: h.Get,
 			request: request{
 				method:     http.MethodGet,
 				target:     "/",
