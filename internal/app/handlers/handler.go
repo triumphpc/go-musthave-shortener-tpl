@@ -19,6 +19,13 @@ type Handler struct {
 	s storage.Repository
 }
 
+// New Allocation new handler
+func New() *Handler {
+	return &Handler{
+		s: storage.New(),
+	}
+}
+
 // Save convert link to shorting and store in database
 func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
@@ -26,12 +33,6 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		if r.Body != http.NoBody {
 			body, err := ioutil.ReadAll(r.Body)
 			if err == nil {
-				// Save in database
-				if h.s == nil {
-					s := storage.Storage{}
-					h.s = &s
-				}
-
 				sl := h.s.Save(string(body))
 				// Prepare response
 				w.Header().Add("Content-Type", "text/plain; charset=utf-8")

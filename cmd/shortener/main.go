@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	// Allocation storage for urls
-	h := handlers.Handler{}
+	// Allocation handler and storage
+	h := handlers.New()
 
 	// Make Routes
 	rtr := mux.NewRouter()

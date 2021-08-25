@@ -24,10 +24,6 @@ var ErrURLNotFound = errors.New("url not found")
 
 // LinkBy implement interface for get data from storage
 func (s *Storage) LinkBy(sl ShortLink) (string, error) {
-	if s.data == nil {
-		return "", ErrURLNotFound
-	}
-
 	l, ok := s.data[sl]
 	if !ok {
 		return l, ErrURLNotFound
@@ -38,12 +34,14 @@ func (s *Storage) LinkBy(sl ShortLink) (string, error) {
 // Save url in storage of short links
 func (s *Storage) Save(url string) (sl ShortLink) {
 	sl = ShortLink(helpers.RandomString(10))
-
-	if s.data == nil {
-		s.data = make(map[ShortLink]string)
-	}
-
 	// Save in database
 	s.data[sl] = url
 	return
+}
+
+// New Instance new Storage with not null fields
+func New() *Storage {
+	return &Storage{
+		data: make(map[ShortLink]string),
+	}
 }
