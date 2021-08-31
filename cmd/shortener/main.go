@@ -17,8 +17,10 @@ func main() {
 
 	// Make Routes
 	rtr := mux.NewRouter()
+	rtr.HandleFunc("/api/shorten", h.SaveJSON)
 	rtr.HandleFunc("/{id:.+}", h.Get)
 	rtr.HandleFunc("/", h.Save)
+
 	http.Handle("/", rtr)
 
 	// context with cancel func

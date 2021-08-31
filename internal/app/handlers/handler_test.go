@@ -6,6 +6,7 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -117,6 +118,38 @@ func TestHandler(t *testing.T) {
 				contentType: "text/html; charset=utf-8",
 			},
 		},
+		{
+			name:    "Test SaveJSON handler #1",
+			handler: h.SaveJSON,
+			request: request{
+				method:    http.MethodPost,
+				target:    "/",
+				path:      "/",
+				body:      "{\"urfxxxx\": \"http://vtest.com\"}",
+				saveParam: false,
+			},
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    "unknown url",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name:    "Test SaveJSON handler #2",
+			handler: h.SaveJSON,
+			request: request{
+				method:    http.MethodPost,
+				target:    "/",
+				path:      "/",
+				body:      "{\"url\": \"vvvvvvvv\"}",
+				saveParam: false,
+			},
+			want: want{
+				code:        http.StatusCreated,
+				response:    "{\"url\":\"NPTNIWDYJD_test_5\"}",
+				contentType: "application/json; charset=utf-8",
+			},
+		},
 	}
 
 	type lastParams struct {
@@ -165,6 +198,14 @@ func TestHandler(t *testing.T) {
 			}
 			readLine := strings.TrimSuffix(string(resBody), "\n")
 
+			log.Println(tt.want.response)
+			log.Println(readLine)
+			// equal response
+			if tt.want.response != "" {
+				assert.Equal(t, tt.want.response, readLine)
+
+			}
+
 			if res.StatusCode == tt.want.code {
 				assert.Positive(t, readLine)
 				// Save last param
@@ -175,6 +216,7 @@ func TestHandler(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
+
 		})
 	}
 }
