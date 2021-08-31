@@ -24,8 +24,8 @@ type Handler struct {
 }
 
 // Url it's users full url
-type Url struct {
-	Url string `json:"url"`
+type URL struct {
+	URL string `json:"url"`
 }
 
 // New Allocation new handler
@@ -66,17 +66,18 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 			body, err := ioutil.ReadAll(r.Body)
 			if err == nil {
 				// Get url from json data
-				url := Url{}
+				url := URL{}
 				err := json.Unmarshal(body, &url)
 				if err == nil {
-					if url.Url == "" {
+					if url.URL == "" {
 						setBadResponse(w, ErrUnknownURL)
 						return
 					}
 
-					sl := h.s.Save(url.Url)
+					sl := h.s.Save(url.URL)
+					slURL := fmt.Sprintf("%s/%s", Host, string(sl))
+					sURL := URL{slURL}
 
-					sURL := Url{string(sl)}
 					body, err := json.Marshal(sURL)
 					if err == nil {
 						// Prepare response
