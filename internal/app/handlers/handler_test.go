@@ -6,7 +6,6 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -146,7 +145,7 @@ func TestHandler(t *testing.T) {
 			},
 			want: want{
 				code:        http.StatusCreated,
-				response:    "{\"url\":\"NPTNIWDYJD_test_5\"}",
+				response:    "{\"result\":\"http://localhost:8080/NPTNIWDYJD_test_5\"}",
 				contentType: "application/json; charset=utf-8",
 			},
 		},
@@ -197,9 +196,6 @@ func TestHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 			readLine := strings.TrimSuffix(string(resBody), "\n")
-
-			log.Println(tt.want.response)
-			log.Println(readLine)
 			// equal response
 			if tt.want.response != "" {
 				assert.Equal(t, tt.want.response, readLine)
