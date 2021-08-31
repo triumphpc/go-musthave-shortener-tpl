@@ -75,14 +75,15 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 					}
 
 					sl := h.s.Save(url.URL)
-					slURL := fmt.Sprintf("%s/%s", Host, string(sl))
+					//slURL := fmt.Sprintf("%s/%s", Host, string(sl))
+					slURL := fmt.Sprintf("/%s", string(sl))
 					sURL := URL{slURL}
 
 					body, err := json.Marshal(sURL)
 					if err == nil {
 						// Prepare response
-						//w.Header().Add("Content-Type", "application/json; charset=utf-8")
-						w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+						w.Header().Add("Content-Type", "application/json; charset=utf-8")
+						//w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 						w.WriteHeader(http.StatusCreated)
 						_, err = w.Write(body)
 						if err == nil {
