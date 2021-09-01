@@ -13,7 +13,7 @@ const DefaultHost = "http://localhost"
 // Config project
 type Config struct {
 	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost"`
-	ServerPort string `env:"PORT" envDefault:"9080"`
+	ServerPort string `env:"PORT" envDefault:"8080"`
 }
 
 // New Instance new Config
@@ -27,9 +27,9 @@ func New() Config {
 	}
 
 	// if is set base url on server
-	//if cfg.BaseURL != DefaultHost {
-	//	cfg.ServerPort = CustomPort
-	//}
+	if cfg.BaseURL != DefaultHost {
+		cfg.ServerPort = CustomPort
+	}
 
 	log.Println("ENVIRONMENTS:")
 	log.Println(os.Environ())
