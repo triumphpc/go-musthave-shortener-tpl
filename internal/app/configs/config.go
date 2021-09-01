@@ -11,7 +11,7 @@ type Config struct {
 	ServerAddress string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	BaseURL       string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	BaseHost      string `env:"BASE_HOST" envDefault:":8080"`
-	//Port          string `env:"APP_PORT" envDefault:"8080"`
+	Port          string `env:"PORT" envDefault:"8080"`
 }
 
 // New Instance new Config
