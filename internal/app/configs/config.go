@@ -10,7 +10,7 @@ const DefaultPort = "8080"
 
 // Config project
 type Config struct {
-	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost"`
+	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	ServerPort string
 }
 
