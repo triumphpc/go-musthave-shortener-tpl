@@ -7,9 +7,9 @@ import (
 
 // Config project
 type Config struct {
-	ServerAddress string `env:"SERVER_ADDRESS" envDefault:""`
-	BaseURL       string `env:"BASE_URL" envDefault:"http://localhost"`
-	Port          string `env:"PORT" envDefault:"8080"`
+	ServerAddress string `env:"APP_BASE_HOST" envDefault:""`
+	BaseURL       string `env:"APP_BASE_URL" envDefault:"http://localhost"`
+	Port          string `env:"APP_PORT" envDefault:"8080"`
 }
 
 // New Instance new Config
