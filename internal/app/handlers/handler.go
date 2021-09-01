@@ -12,8 +12,6 @@ import (
 	"net/http"
 )
 
-const Host = "http://localhost:8080"
-
 // ErrBadResponse Package level error
 var ErrBadResponse = errors.New("bad request")
 var ErrUnknownURL = errors.New("unknown url")
