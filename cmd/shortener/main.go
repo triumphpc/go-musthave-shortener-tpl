@@ -28,7 +28,9 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	// Init server
-	srv := &http.Server{Addr: ":8080"}
+	srv := &http.Server{
+		Addr: h.Config().ServerAddress,
+	}
 	// Goroutine
 	go func() {
 		log.Fatal(srv.ListenAndServe())

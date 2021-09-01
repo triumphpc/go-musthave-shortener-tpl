@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
 	"io/ioutil"
 	"log"
@@ -21,6 +22,7 @@ var ErrInternalError = errors.New("internal error")
 // Handler general type for handler
 type Handler struct {
 	s storage.Repository
+	c configs.Config
 }
 
 // URL it's users full url
@@ -32,7 +34,13 @@ type URL struct {
 func New() *Handler {
 	return &Handler{
 		s: storage.New(),
+		c: configs.New(),
 	}
+}
+
+// Config getter config of handler
+func (h *Handler) Config() configs.Config {
+	return h.c
 }
 
 // Save convert link to shorting and store in database
@@ -47,7 +55,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 				w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
 
-				slURL := fmt.Sprintf("%s/%s", Host, string(sl))
+				slURL := fmt.Sprintf("%s/%s", h.c.BaseURL, string(sl))
 				_, err = w.Write([]byte(slURL))
 				if err == nil {
 					return
@@ -75,7 +83,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 					}
 
 					sl := h.s.Save(url.URL)
-					slURL := fmt.Sprintf("%s/%s", Host, string(sl))
+					slURL := fmt.Sprintf("%s/%s", h.c.BaseURL, string(sl))
 					result := struct {
 						Result string `json:"result"`
 					}{Result: slURL}
