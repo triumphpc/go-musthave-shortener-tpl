@@ -8,8 +8,8 @@ import (
 
 // Config project
 type Config struct {
-	ServerAddress string `env:"APP_BASE_HOST" envDefault:""`
-	BaseURL       string `env:"APP_BASE_URL" envDefault:"http://localhost"`
+	ServerAddress string `env:"SERVER_ADDRESS" envDefault:""`
+	BaseURL       string `env:"BASE_URL" envDefault:"http://localhost"`
 	Port          string `env:"APP_PORT" envDefault:"8080"`
 }
 
@@ -23,9 +23,8 @@ func New() Config {
 		log.Fatal(err)
 	}
 
-	log.Println("ENVIROMENT:")
+	log.Println("ENVIRONMENTS:")
 	log.Println(os.Environ())
-	log.Println(cfg)
 
 	return cfg
 }
