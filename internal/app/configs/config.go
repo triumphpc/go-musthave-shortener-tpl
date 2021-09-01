@@ -8,10 +8,9 @@ import (
 
 // Config project
 type Config struct {
-	ServerAddress string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	ServerAddress string `env:"BASE_URL" envDefault:""`
 	BaseURL       string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	BaseHost      string `env:"BASE_HOST" envDefault:":8080"`
-	Port          string `env:"PORT" envDefault:"8080"`
+	ServerPort    string `env:"PORT" envDefault:"8080"`
 }
 
 // New Instance new Config
@@ -22,6 +21,10 @@ func New() Config {
 	err := env.Parse(&cfg)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if cfg.BaseURL != "http://localhost" {
+		cfg.ServerPort = "9080"
 	}
 
 	log.Println("ENVIRONMENTS:")
