@@ -8,11 +8,12 @@ import (
 
 // CustomPort for server
 const CustomPort = "9080"
+const DefaultHost = "http://localhost"
 
 // Config project
 type Config struct {
-	ServerHost string `env:"BASE_URL" envDefault:""`
-	ServerPort string `env:"PORT" envDefault:"8080"`
+	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost"`
+	ServerPort string `env:"PORT" envDefault:"9080"`
 }
 
 // New Instance new Config
@@ -26,9 +27,9 @@ func New() Config {
 	}
 
 	// if is set base url on server
-	if cfg.ServerHost != "" {
-		cfg.ServerPort = CustomPort
-	}
+	//if cfg.BaseURL != DefaultHost {
+	//	cfg.ServerPort = CustomPort
+	//}
 
 	log.Println("ENVIRONMENTS:")
 	log.Println(os.Environ())
