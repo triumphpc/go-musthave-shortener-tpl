@@ -3,6 +3,7 @@ package configs
 import (
 	"github.com/caarlos0/env/v6"
 	"log"
+	"os"
 )
 
 // Config project
@@ -21,6 +22,10 @@ func New() Config {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("ENVIROMENT:")
+	log.Println(os.Environ())
+	log.Println(cfg)
 
 	return cfg
 }
