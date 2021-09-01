@@ -53,7 +53,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 				w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
 
-				slURL := fmt.Sprintf("%s:%s/%s", h.c.BaseURL, h.c.ServerPort, string(sl))
+				slURL := fmt.Sprintf("%s/%s", h.c.BaseURL, string(sl))
 				_, err = w.Write([]byte(slURL))
 				if err == nil {
 					return
@@ -81,7 +81,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 					}
 
 					sl := h.s.Save(url.URL)
-					slURL := fmt.Sprintf("%s:%s/%s", h.c.BaseURL, h.c.ServerPort, string(sl))
+					slURL := fmt.Sprintf("%s/%s", h.c.BaseURL, string(sl))
 					result := struct {
 						Result string `json:"result"`
 					}{Result: slURL}
