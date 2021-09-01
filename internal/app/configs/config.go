@@ -1,14 +1,15 @@
 package configs
 
 import (
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v6"
 	"log"
 )
 
 // Config project
 type Config struct {
-	ServerAddress string `env:"SERVER_ADDRESS,required"`
-	BaseURL       string `env:"BASE_URL,required"`
+	ServerAddress string `env:"SERVER_ADDRESS" envDefault:""`
+	BaseURL       string `env:"BASE_URL" envDefault:"http://localhost"`
+	Port          string `env:"PORT" envDefault:"8080"`
 }
 
 // New Instance new Config
@@ -20,5 +21,6 @@ func New() Config {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	return cfg
 }
