@@ -6,11 +6,16 @@ import (
 	"os"
 )
 
+// DefaultHost for server
+const DefaultHost = "http://localhost"
+
+// DefaultPort for server
+const DefaultPort = "8080"
+
 // Config project
 type Config struct {
-	ServerAddress string `env:"BASE_URL" envDefault:""`
-	BaseURL       string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	ServerPort    string `env:"PORT" envDefault:"8080"`
+	ServerHost string `env:"BASE_URL" envDefault:"http://localhost"`
+	ServerPort string `env:"PORT" envDefault:"8080"`
 }
 
 // New Instance new Config
@@ -23,8 +28,8 @@ func New() Config {
 		log.Fatal(err)
 	}
 
-	if cfg.BaseURL != "http://localhost" {
-		cfg.ServerPort = "9080"
+	if cfg.ServerHost == DefaultHost {
+		cfg.ServerPort = DefaultPort
 	}
 
 	log.Println("ENVIRONMENTS:")

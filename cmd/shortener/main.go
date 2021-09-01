@@ -29,7 +29,7 @@ func main() {
 
 	// Init server
 	srv := &http.Server{
-		Addr: h.Config().ServerAddress + ":" + h.Config().ServerPort,
+		Addr: h.Config().ServerHost + ":" + h.Config().ServerPort,
 	}
 	// Goroutine
 	go func() {
