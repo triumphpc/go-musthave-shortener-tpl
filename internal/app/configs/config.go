@@ -2,6 +2,8 @@ package configs
 
 import (
 	"github.com/caarlos0/env/v6"
+	"log"
+	"os"
 )
 
 // DefaultPort for server
@@ -26,6 +28,7 @@ func New() Config {
 	if err != nil {
 		panic(err)
 	}
+
 	// Set server port
 	if c.BaseURL != DefaultHost+":"+DefaultPort {
 		c.ServerPort = CustomPort
@@ -33,5 +36,9 @@ func New() Config {
 		// if set base url on server
 		c.ServerPort = DefaultPort
 	}
+
+	log.Println("ENVIRONMENTS:")
+	log.Println(os.Environ())
+	log.Println(c)
 	return c
 }

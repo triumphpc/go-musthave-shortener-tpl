@@ -46,7 +46,7 @@ type consumer struct {
 
 // NewProducer instance new producer
 func NewProducer(fileName string) (*producer, error) {
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0755)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func NewProducer(fileName string) (*producer, error) {
 
 // NewConsumer instance new consumer
 func NewConsumer(fileName string) (*consumer, error) {
-	f, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0755)
+	f, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
