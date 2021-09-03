@@ -30,10 +30,16 @@ type URL struct {
 
 // New Allocation new handler
 func New() *Handler {
-	return &Handler{
+	h := &Handler{
 		s: storage.New(),
 		c: configs.New(),
 	}
+	// Load from file storage
+	if err := h.s.Load(h.c); err != nil {
+		panic(err)
+	}
+
+	return h
 }
 
 // Config getter config of handler
@@ -48,12 +54,20 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		if r.Body != http.NoBody {
 			body, err := ioutil.ReadAll(r.Body)
 			if err == nil {
-				sl := h.s.Save(string(body))
+				origin := string(body)
+				short := string(h.s.Save(origin))
+
+				log.Println(origin)
+				log.Println(short)
+
+				// Flush links
+				defer h.s.Flush(h.c)
+
 				// Prepare response
 				w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
 
-				slURL := fmt.Sprintf("%s/%s", h.c.BaseURL, string(sl))
+				slURL := fmt.Sprintf("%s/%s", h.c.BaseURL, short)
 				_, err = w.Write([]byte(slURL))
 				if err == nil {
 					return

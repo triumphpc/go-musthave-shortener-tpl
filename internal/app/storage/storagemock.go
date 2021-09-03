@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"strconv"
 )
@@ -20,12 +21,12 @@ func (s *MockStorage) GenerateMockData() {
 
 // LinkBy implement interface for get data from storage
 func (s *MockStorage) LinkBy(sl ShortLink) (string, error) {
-	if s.data == nil {
+	if s.Data == nil {
 
 		return "", ErrURLNotFound
 	}
 
-	l, ok := s.data[sl]
+	l, ok := s.Data[sl]
 	if !ok {
 		return l, ErrURLNotFound
 	}
@@ -38,10 +39,20 @@ func (s *MockStorage) Save(url string) (sl ShortLink) {
 	testCount = testCount + 1
 	sl = ShortLink(helpers.RandomString(10) + "_test_" + strconv.Itoa(testCount))
 
-	if s.data == nil {
-		s.data = make(map[ShortLink]string)
+	if s.Data == nil {
+		s.Data = make(map[ShortLink]string)
 	}
 	// Save in database
-	s.data[sl] = url
+	s.Data[sl] = url
 	return
+}
+
+// Flush all links to file storage
+func (s *MockStorage) Flush(c configs.Config) error {
+	return nil
+}
+
+// Load all links to map
+func (s *MockStorage) Load(c configs.Config) error {
+	return nil
 }

@@ -14,7 +14,7 @@ import (
 
 func TestHandler(t *testing.T) {
 	// Allocation storage for urls
-	h := Handler{}
+	h := New()
 	s := storage.MockStorage{}
 	s.GenerateMockData()
 	h.s = &s

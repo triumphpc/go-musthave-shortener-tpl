@@ -11,30 +11,34 @@ const DefaultPort = "8080"
 // CustomPort for server
 const CustomPort = "9080"
 const DefaultHost = "http://localhost"
+const FileStorageName = "db_links"
 
 // Config project
 type Config struct {
-	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	ServerPort string
+	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+	ServerPort      string
+	FileStoragePath string `enn:"FILE_STORAGE_PATH" envDefault:""`
 }
 
 // New Instance new Config
 func New() Config {
-	var cfg Config
-
+	var c Config
 	// Parse environment
-	err := env.Parse(&cfg)
+	err := env.Parse(&c)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	if cfg.BaseURL != DefaultHost+":"+DefaultPort {
-		cfg.ServerPort = CustomPort
-
+	// Set server port
+	if c.BaseURL != DefaultHost+":"+DefaultPort {
+		c.ServerPort = CustomPort
 	} else {
-		// if is set base url on server
-		cfg.ServerPort = DefaultPort
+		// if set base url on server
+		c.ServerPort = DefaultPort
 	}
-
-	return cfg
+	// Set full dir for file storage
+	if c.FileStoragePath != "" {
+		c.FileStoragePath = c.FileStoragePath + FileStorageName
+		log.Println("Set file storage from ivn: " + c.FileStoragePath)
+	}
+	return c
 }
