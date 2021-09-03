@@ -56,10 +56,6 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				origin := string(body)
 				short := string(h.s.Save(origin))
-
-				log.Println(origin)
-				log.Println(short)
-
 				// Flush links
 				defer h.s.Flush(h.c)
 
@@ -102,6 +98,9 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 
 					body, err := json.Marshal(result)
 					if err == nil {
+						// Flush links
+						defer h.s.Flush(h.c)
+
 						// Prepare response
 						w.Header().Add("Content-Type", "application/json; charset=utf-8")
 						w.WriteHeader(http.StatusCreated)

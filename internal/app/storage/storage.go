@@ -6,6 +6,8 @@ import (
 	"errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
+	"io"
+	"log"
 	"os"
 )
 
@@ -146,8 +148,12 @@ func (s *Storage) Load(c configs.Config) error {
 
 	gobDecoder := gob.NewDecoder(cns.file)
 	if err := gobDecoder.Decode(&s.Data); err != nil {
-		panic(err)
+		if err != io.EOF {
+			panic(err)
+		}
 	}
+
+	log.Println(s.Data)
 
 	return nil
 }
