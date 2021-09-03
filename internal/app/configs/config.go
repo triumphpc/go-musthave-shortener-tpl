@@ -3,6 +3,7 @@ package configs
 import (
 	"github.com/caarlos0/env/v6"
 	"log"
+	"os"
 )
 
 // DefaultPort for server
@@ -40,5 +41,9 @@ func New() Config {
 		c.FileStoragePath = c.FileStoragePath + FileStorageName
 		log.Println("Set file storage from ivn: " + c.FileStoragePath)
 	}
+	log.Println("ENVIRONMENTS:")
+	log.Println(os.Environ())
+	log.Println(c)
+
 	return c
 }
