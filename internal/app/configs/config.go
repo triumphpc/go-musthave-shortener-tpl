@@ -17,7 +17,7 @@ const DefaultHost = "http://localhost"
 type Config struct {
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	ServerPort      string
-	FileStoragePath string `env:"PERSISTENT_FILE_PATH" envDefault:""`
+	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
 }
 
 // New Instance new Config
