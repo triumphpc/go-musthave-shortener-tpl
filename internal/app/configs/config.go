@@ -16,6 +16,7 @@ type Config struct {
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	ServerPort      string
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
+	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
 }
 
 // New Instance new Config
@@ -28,11 +29,11 @@ func New() Config {
 	}
 
 	// Set server port
-	if c.BaseURL != DefaultHost+":"+DefaultPort {
-		c.ServerPort = CustomPort
-	} else {
-		// if set base url on server
-		c.ServerPort = DefaultPort
-	}
+	//if c.BaseURL != DefaultHost+":"+DefaultPort {
+	//	c.ServerPort = CustomPort
+	//} else {
+	//	// if set base url on server
+	//	c.ServerPort = DefaultPort
+	//}
 	return c
 }
