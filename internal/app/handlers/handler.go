@@ -73,60 +73,65 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 // SaveJSON convert link to shorting and store in database
 func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		// Validation
-		if r.Body != http.NoBody {
-			body, err := ioutil.ReadAll(r.Body)
-			if err == nil {
-				// Get url from json data
-				url := URL{}
-				err := json.Unmarshal(body, &url)
-				if err == nil {
-					if url.URL == "" {
-						setBadResponse(w, ErrUnknownURL)
-						return
-					}
+	if r.Method != http.MethodPost {
+		setBadResponse(w, ErrBadResponse)
+		return
 
-					sl := h.s.Save(url.URL)
-					baseURL, err := configs.Instance().Param(configs.BaseURL)
-					if err != nil {
-						setBadResponse(w, ErrBadResponse)
-					}
+	}
+	// Validation
+	if r.Body == http.NoBody {
+		setBadResponse(w, ErrBadResponse)
+		return
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		setBadResponse(w, ErrUnknownURL)
+		return
+	}
+	// Get url from json data
+	url := URL{}
+	err = json.Unmarshal(body, &url)
+	if err != nil {
+		setBadResponse(w, ErrUnknownURL)
+		return
+	}
 
-					slURL := fmt.Sprintf("%s/%s", baseURL, string(sl))
-					result := struct {
-						Result string `json:"result"`
-					}{Result: slURL}
+	if url.URL == "" {
+		setBadResponse(w, ErrUnknownURL)
+		return
+	}
 
-					body, err := json.Marshal(result)
-					if err == nil {
-						// Flush links
-						defer func(s storage.Repository) {
-							err := s.Flush()
-							if err != nil {
-								setBadResponse(w, ErrInternalError)
-							}
-						}(h.s)
+	sl := h.s.Save(url.URL)
+	baseURL, err := configs.Instance().Param(configs.BaseURL)
+	if err != nil {
+		setBadResponse(w, ErrBadResponse)
+	}
 
-						// Prepare response
-						w.Header().Add("Content-Type", "application/json; charset=utf-8")
-						w.WriteHeader(http.StatusCreated)
-						_, err = w.Write(body)
-						if err == nil {
-							return
-						}
-					}
-					setBadResponse(w, ErrInternalError)
-					return
-				}
-				setBadResponse(w, ErrUnknownURL)
-				return
+	slURL := fmt.Sprintf("%s/%s", baseURL, string(sl))
+	result := struct {
+		Result string `json:"result"`
+	}{Result: slURL}
+
+	body, err = json.Marshal(result)
+	if err == nil {
+		// Flush links
+		defer func(s storage.Repository) {
+			err := s.Flush()
+			if err != nil {
+				setBadResponse(w, ErrInternalError)
 			}
-			setBadResponse(w, ErrUnknownURL)
+		}(h.s)
+
+		// Prepare response
+		w.Header().Add("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusCreated)
+		_, err = w.Write(body)
+		if err == nil {
 			return
 		}
 	}
-	setBadResponse(w, ErrBadResponse)
+	setBadResponse(w, ErrInternalError)
+	return
 }
 
 // Get fid origin link from storage

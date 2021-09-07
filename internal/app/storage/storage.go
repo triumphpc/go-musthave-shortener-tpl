@@ -118,7 +118,7 @@ func (s *Storage) Save(url string) (sl ShortLink) {
 // Flush all links to file storage
 func (s *Storage) Flush() error {
 	fileStoragePath, err := configs.Instance().Param(configs.FileStoragePath)
-	if err != nil || fileStoragePath == "" {
+	if err != nil || fileStoragePath == configs.FileStoragePathDefault {
 		return nil
 	}
 
