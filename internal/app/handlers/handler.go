@@ -20,7 +20,6 @@ var ErrInternalError = errors.New("internal error")
 // Handler general type for handler
 type Handler struct {
 	s storage.Repository
-	c configs.Config
 }
 
 // URL it's users full url
@@ -29,22 +28,10 @@ type URL struct {
 }
 
 // New Allocation new handler
-func New() *Handler {
-	h := &Handler{
+func New() (h *Handler) {
+	return &Handler{
 		s: storage.New(),
-		c: configs.New(),
 	}
-	// Load from file storage
-	if err := h.s.Load(h.c); err != nil {
-		panic(err)
-	}
-
-	return h
-}
-
-// Config getter config of handler
-func (h *Handler) Config() configs.Config {
-	return h.c
 }
 
 // Save convert link to shorting and store in database
@@ -56,17 +43,27 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				origin := string(body)
 				short := string(h.s.Save(origin))
+
 				// Flush links
-				defer h.s.Flush(h.c)
+				defer func(s storage.Repository) {
+					err := s.Flush()
+					if err != nil {
+						setBadResponse(w, ErrBadResponse)
+					}
+				}(h.s)
 
 				// Prepare response
 				w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
 
-				slURL := fmt.Sprintf("%s/%s", h.c.BaseURL, short)
-				_, err = w.Write([]byte(slURL))
+				c := configs.Instance()
+				baseURL, err := c.Param(configs.BaseURL)
 				if err == nil {
-					return
+					slURL := fmt.Sprintf("%s/%s", baseURL, short)
+					_, err = w.Write([]byte(slURL))
+					if err == nil {
+						return
+					}
 				}
 			}
 		}
@@ -91,7 +88,12 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 					}
 
 					sl := h.s.Save(url.URL)
-					slURL := fmt.Sprintf("%s/%s", h.c.BaseURL, string(sl))
+					baseURL, err := configs.Instance().Param(configs.BaseURL)
+					if err != nil {
+						setBadResponse(w, ErrBadResponse)
+					}
+
+					slURL := fmt.Sprintf("%s/%s", baseURL, string(sl))
 					result := struct {
 						Result string `json:"result"`
 					}{Result: slURL}
@@ -99,7 +101,12 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 					body, err := json.Marshal(result)
 					if err == nil {
 						// Flush links
-						defer h.s.Flush(h.c)
+						defer func(s storage.Repository) {
+							err := s.Flush()
+							if err != nil {
+								setBadResponse(w, ErrInternalError)
+							}
+						}(h.s)
 
 						// Prepare response
 						w.Header().Add("Content-Type", "application/json; charset=utf-8")
@@ -109,7 +116,6 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 					}
-					log.Println(err)
 					setBadResponse(w, ErrInternalError)
 					return
 				}

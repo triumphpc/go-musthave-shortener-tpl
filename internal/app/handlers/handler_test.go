@@ -3,7 +3,6 @@ package handlers
 import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,9 +14,6 @@ import (
 func TestHandler(t *testing.T) {
 	// Allocation storage for urls
 	h := New()
-	s := storage.MockStorage{}
-	s.GenerateMockData()
-	h.s = &s
 
 	type want struct {
 		code        int
@@ -97,9 +93,9 @@ func TestHandler(t *testing.T) {
 				path:   "/{id:.+}",
 			},
 			want: want{
-				code:        http.StatusTemporaryRedirect,
+				code:        http.StatusBadRequest,
 				response:    "",
-				contentType: "text/html; charset=utf-8",
+				contentType: "text/plain; charset=utf-8",
 			},
 		},
 		{
@@ -125,7 +121,7 @@ func TestHandler(t *testing.T) {
 				target:    "/",
 				path:      "/",
 				body:      "{\"urfxxxx\": \"http://vtest.com\"}",
-				saveParam: false,
+				saveParam: true,
 			},
 			want: want{
 				code:        http.StatusBadRequest,
@@ -137,15 +133,16 @@ func TestHandler(t *testing.T) {
 			name:    "Test SaveJSON handler #2",
 			handler: h.SaveJSON,
 			request: request{
-				method:    http.MethodPost,
-				target:    "/",
-				path:      "/",
-				body:      "{\"url\": \"vvvvvvvv\"}",
-				saveParam: false,
+				method:     http.MethodPost,
+				target:     "/",
+				path:       "/",
+				body:       "{\"url\": \"vvvvvvvv\"}",
+				saveParam:  false,
+				checkParam: true,
 			},
 			want: want{
 				code:        http.StatusCreated,
-				response:    "{\"result\":\"http://localhost:8080/NPTNIWDYJD_test_5\"}",
+				response:    "{\"result\":\"http://localhost:8080/TLMODYLUMG\"}",
 				contentType: "application/json; charset=utf-8",
 			},
 		},

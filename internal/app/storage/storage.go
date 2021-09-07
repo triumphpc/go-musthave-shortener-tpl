@@ -7,7 +7,6 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"io"
-	"log"
 	"os"
 )
 
@@ -84,7 +83,7 @@ type Repository interface {
 	LinkBy(sl ShortLink) (string, error)
 	Save(url string) (sl ShortLink)
 	// Flush write all links to file-storage
-	Flush(c configs.Config) error
+	Flush() error
 	// Load links from file storage
 	Load(c configs.Config) error
 }
@@ -117,12 +116,14 @@ func (s *Storage) Save(url string) (sl ShortLink) {
 }
 
 // Flush all links to file storage
-func (s *Storage) Flush(c configs.Config) error {
-	if c.FileStoragePath == "" {
+func (s *Storage) Flush() error {
+	fileStoragePath, err := configs.Instance().Param(configs.FileStoragePath)
+	if err != nil || fileStoragePath == "" {
 		return nil
 	}
+
 	// Create new producer for write links to file storage
-	p, err := NewProducer(c.FileStoragePath)
+	p, err := NewProducer(fileStoragePath)
 	if nil != err {
 		return err
 	}
@@ -130,7 +131,7 @@ func (s *Storage) Flush(c configs.Config) error {
 	gobEncoder := gob.NewEncoder(p.writer)
 	// encode
 	if err := gobEncoder.Encode(s.Data); err != nil {
-		panic(err)
+		return err
 	}
 
 	return p.writer.Flush()
@@ -138,10 +139,12 @@ func (s *Storage) Flush(c configs.Config) error {
 
 // Load all links to map
 func (s *Storage) Load(c configs.Config) error {
-	if c.FileStoragePath == "" {
+	fs, err := c.Param(configs.FileStoragePath)
+
+	if err != nil || fs == configs.FileStoragePathDefault {
 		return nil
 	}
-	cns, err := NewConsumer(c.FileStoragePath)
+	cns, err := NewConsumer(fs)
 	if nil != err {
 		return err
 	}
@@ -149,11 +152,8 @@ func (s *Storage) Load(c configs.Config) error {
 	gobDecoder := gob.NewDecoder(cns.file)
 	if err := gobDecoder.Decode(&s.Data); err != nil {
 		if err != io.EOF {
-			panic(err)
+			return err
 		}
 	}
-
-	log.Println(s.Data)
-
 	return nil
 }

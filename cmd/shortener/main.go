@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/gorilla/mux"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
 	"log"
 	"net/http"
@@ -27,9 +28,16 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
+	// Get base URL
+	ServerAddress, err := configs.Instance().Param(configs.ServerAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Init server
 	srv := &http.Server{
-		Addr: h.Config().ServerAddress,
+		//Addr: h.Config().ServerAddress,
+		Addr: ServerAddress,
 	}
 	// Goroutine
 	go func() {
@@ -47,6 +55,8 @@ func main() {
 	}
 
 	log.Print("The service is shutting down...")
-	srv.Shutdown(context.Background())
+	if err = srv.Shutdown(context.Background()); err != nil {
+		log.Fatal(err)
+	}
 	log.Print("Done")
 }

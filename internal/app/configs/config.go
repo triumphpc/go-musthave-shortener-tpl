@@ -1,49 +1,90 @@
 package configs
 
 import (
+	"errors"
 	"flag"
-	"github.com/caarlos0/env/v6"
+	"os"
 )
 
-var (
-	baseURL         *string
-	serverAddress   *string
-	fileStoragePath *string
-)
+var UnknownParam = errors.New("unknown param")
 
 // Config project
 type Config struct {
-	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
-	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	baseURL         string
+	fileStoragePath string
+	serverAddress   string
 }
 
-func init() {
-	serverAddress = flag.String("a", "", "server address")
-	baseURL = flag.String("b", "", "base url")
-	fileStoragePath = flag.String("f", "", "a string")
+const (
+	BaseURL                = "BASE_URL"
+	BaseURLDefault         = "http://localhost:8080"
+	ServerAddress          = "SERVER_ADDRESS"
+	ServerAddressDefault   = ":8080"
+	FileStoragePath        = "FILE_STORAGE_PATH"
+	FileStoragePathDefault = "unknown"
+)
+
+// Maps for take inv params
+var mapVarToInv = map[string]string{
+	BaseURL:         "b",
+	ServerAddress:   "a",
+	FileStoragePath: "f",
 }
 
-// New Instance new Config
-func New() Config {
-	var c Config
-	// Parse environment
-	err := env.Parse(&c)
-	if err != nil {
-		panic(err)
+var instance = Config{}
+
+// Instance new Config
+func Instance() *Config {
+	return &instance
+}
+
+// Param from configs
+func (c *Config) Param(p string) (string, error) {
+	switch p {
+	case BaseURL:
+		if c.baseURL != "" {
+			return c.baseURL, nil
+		}
+		c.baseURL = initParam(p)
+		return c.baseURL, nil
+	case ServerAddress:
+		if c.serverAddress != "" {
+			return c.serverAddress, nil
+		}
+		c.serverAddress = initParam(p)
+		return c.serverAddress, nil
+	case FileStoragePath:
+		if c.fileStoragePath != "" {
+			return c.fileStoragePath, nil
+		}
+		c.fileStoragePath = initParam(p)
+		return c.fileStoragePath, nil
 	}
+	return "", UnknownParam
+}
 
-	// parse args
+func initParam(p string) string {
+	param := flag.String(mapVarToInv[p], "", "")
 	flag.Parse()
-	if *serverAddress != "" {
-		c.ServerAddress = *serverAddress
-	}
-	if *baseURL != "" {
-		c.BaseURL = *baseURL
-	}
 
-	if *fileStoragePath != "" {
-		c.FileStoragePath = *fileStoragePath
+	if *param != "" {
+		return *param
+	} else {
+		// Get from inv
+		invPar := os.Getenv(p)
+		if invPar != "" {
+			return invPar
+		} else {
+			// return default value
+			switch p {
+			case BaseURL:
+				return BaseURLDefault
+			case ServerAddress:
+				return ServerAddressDefault
+			case FileStoragePath:
+				return FileStoragePathDefault
+			}
+		}
 	}
-	return c
+	return ""
 }
