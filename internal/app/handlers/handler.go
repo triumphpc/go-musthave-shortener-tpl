@@ -126,7 +126,6 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	setBadResponse(w, ErrInternalError)
-	return
 }
 
 // Get fid origin link from storage

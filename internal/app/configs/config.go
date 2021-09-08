@@ -22,6 +22,7 @@ const (
 	ServerAddressDefault   = ":8080"
 	FileStoragePath        = "FILE_STORAGE_PATH"
 	FileStoragePathDefault = "unknown"
+	Port                   = "PORT"
 )
 
 // Maps for take inv params
@@ -52,6 +53,9 @@ func (c *Config) Param(p string) (string, error) {
 			return c.serverAddress, nil
 		}
 		c.serverAddress = initParam(p)
+		if c.serverAddress != ServerAddressDefault {
+			c.serverAddress = ":" + initParam(Port)
+		}
 		return c.serverAddress, nil
 	case FileStoragePath:
 		if c.fileStoragePath != "" {
