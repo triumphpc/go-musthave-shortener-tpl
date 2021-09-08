@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var UnknownParam = errors.New("unknown param")
+var ErrUnknownParam = errors.New("unknown param")
 
 // Config project
 type Config struct {
@@ -60,7 +60,7 @@ func (c *Config) Param(p string) (string, error) {
 		c.fileStoragePath = initParam(p)
 		return c.fileStoragePath, nil
 	}
-	return "", UnknownParam
+	return "", ErrUnknownParam
 }
 
 func initParam(p string) string {

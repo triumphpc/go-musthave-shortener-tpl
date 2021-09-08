@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,7 +14,10 @@ import (
 
 func TestHandler(t *testing.T) {
 	// Allocation storage for urls
-	h := New()
+	h, err := New()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	type want struct {
 		code        int

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/filestorage"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
 	"io/ioutil"
 	"log"
@@ -28,9 +29,21 @@ type URL struct {
 }
 
 // New Allocation new handler
-func New() (h *Handler) {
-	return &Handler{
-		s: storage.New(),
+func New() (h *Handler, err error) {
+	// If set file storage path
+	fs, err := configs.Instance().Param(configs.FileStoragePath)
+	if err != nil || fs == configs.FileStoragePathDefault {
+		return &Handler{
+			s: storage.New(),
+		}, nil
+	} else {
+		s, err := filestorage.New()
+		if err != nil {
+			return nil, err
+		}
+		return &Handler{
+			s: s,
+		}, nil
 	}
 }
 
@@ -43,21 +56,11 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				origin := string(body)
 				short := string(h.s.Save(origin))
-
-				// Flush links
-				defer func(s storage.Repository) {
-					err := s.Flush()
-					if err != nil {
-						setBadResponse(w, ErrBadResponse)
-					}
-				}(h.s)
-
 				// Prepare response
 				w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
 
-				c := configs.Instance()
-				baseURL, err := c.Param(configs.BaseURL)
+				baseURL, err := configs.Instance().Param(configs.BaseURL)
 				if err == nil {
 					slURL := fmt.Sprintf("%s/%s", baseURL, short)
 					_, err = w.Write([]byte(slURL))
@@ -114,14 +117,6 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 
 	body, err = json.Marshal(result)
 	if err == nil {
-		// Flush links
-		defer func(s storage.Repository) {
-			err := s.Flush()
-			if err != nil {
-				setBadResponse(w, ErrInternalError)
-			}
-		}(h.s)
-
 		// Prepare response
 		w.Header().Add("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusCreated)

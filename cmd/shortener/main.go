@@ -14,7 +14,10 @@ import (
 
 func main() {
 	// Allocation handler and storage
-	h := handlers.New()
+	h, err := handlers.New()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Make Routes
 	rtr := mux.NewRouter()
