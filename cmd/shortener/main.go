@@ -32,15 +32,15 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	// Get base URL
-	ServerAddress, err := configs.Instance().Param(configs.ServerAddress)
+	serverAddress, err := configs.Instance().Param(configs.ServerAddress)
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("Start server address:", serverAddress)
 
 	// Init server
 	srv := &http.Server{
-		//Addr: h.Config().ServerAddress,
-		Addr: ServerAddress,
+		Addr: serverAddress,
 	}
 	// Goroutine
 	go func() {

@@ -3,7 +3,6 @@ package configs
 import (
 	"errors"
 	"flag"
-	"log"
 	"os"
 )
 
@@ -32,11 +31,15 @@ var mapVarToInv = map[string]string{
 	FileStoragePath: "f",
 }
 
-var instance = Config{}
+var instance *Config
 
 // Instance new Config
 func Instance() *Config {
-	return &instance
+	if instance == nil {
+		instance = new(Config)
+		instance.init()
+	}
+	return instance
 }
 
 // Param from configs
@@ -46,48 +49,52 @@ func (c *Config) Param(p string) (string, error) {
 		if c.baseURL != "" {
 			return c.baseURL, nil
 		}
-		c.baseURL = initParam(p)
+		c.baseURL = fromInv(p)
 		return c.baseURL, nil
 	case ServerAddress:
 		if c.serverAddress != "" {
-			log.Println("SERVER ADD: " + c.serverAddress)
 			return c.serverAddress, nil
 		}
-		c.serverAddress = initParam(p)
-		log.Println("SERVER ADD 2: " + c.serverAddress)
+		c.serverAddress = fromInv(p)
 		return c.serverAddress, nil
 	case FileStoragePath:
 		if c.fileStoragePath != "" {
 			return c.fileStoragePath, nil
 		}
-		c.fileStoragePath = initParam(p)
+		c.fileStoragePath = fromInv(p)
 		return c.fileStoragePath, nil
 	}
 	return "", ErrUnknownParam
 }
 
-func initParam(p string) string {
-	param := flag.String(mapVarToInv[p], "", "")
-	flag.Parse()
-
-	if *param != "" {
-		return *param
+// fromInv check from inv
+func fromInv(p string) string {
+	// Get from inv
+	param := os.Getenv(p)
+	if param != "" {
+		return param
 	} else {
-		// Get from inv
-		invPar := os.Getenv(p)
-		if invPar != "" {
-			return invPar
-		} else {
-			// return default value
-			switch p {
-			case BaseURL:
-				return BaseURLDefault
-			case ServerAddress:
-				return ServerAddressDefault
-			case FileStoragePath:
-				return FileStoragePathDefault
-			}
+		// return default value
+		switch p {
+		case BaseURL:
+			return BaseURLDefault
+		case ServerAddress:
+			return ServerAddressDefault
+		case FileStoragePath:
+			return FileStoragePathDefault
 		}
 	}
 	return ""
+}
+
+// initParams from cli params
+func (c *Config) init() {
+	bu := flag.String(mapVarToInv[BaseURL], "", "")
+	sa := flag.String(mapVarToInv[ServerAddress], "", "")
+	fs := flag.String(mapVarToInv[FileStoragePath], "", "")
+	flag.Parse()
+
+	c.baseURL = *bu
+	c.serverAddress = *sa
+	c.fileStoragePath = *fs
 }
