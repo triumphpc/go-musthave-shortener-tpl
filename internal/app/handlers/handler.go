@@ -8,6 +8,7 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/filestorage"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,9 +19,19 @@ var ErrBadResponse = errors.New("bad request")
 var ErrUnknownURL = errors.New("unknown url")
 var ErrInternalError = errors.New("internal error")
 
+// Repository interface for working with global repository
+// go:generate mockery --name=Repository --inpackage
+type Repository interface {
+	// LinkBy get original link
+	LinkBy(sl storage.ShortLink) (string, error)
+	// Save link to repository
+	Save(url string) (sl storage.ShortLink)
+}
+
 // Handler general type for handler
 type Handler struct {
-	s storage.Repository
+	s Repository
+	l *zap.Logger
 }
 
 // URL it's users full url
@@ -28,13 +39,18 @@ type URL struct {
 	URL string `json:"url"`
 }
 
+func (h *Handler) SetRepository(r Repository) {
+	h.s = r
+}
+
 // New Allocation new handler
-func New() (h *Handler, err error) {
+func New(l *zap.Logger) (h *Handler, err error) {
 	// If set file storage path
 	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	if err != nil || fs == configs.FileStoragePathDefault {
 		return &Handler{
 			s: storage.New(),
+			l: l,
 		}, nil
 	} else {
 		s, err := filestorage.New()
@@ -43,6 +59,7 @@ func New() (h *Handler, err error) {
 		}
 		return &Handler{
 			s: s,
+			l: l,
 		}, nil
 	}
 }
@@ -109,11 +126,15 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		setBadResponse(w, ErrBadResponse)
 	}
-
 	slURL := fmt.Sprintf("%s/%s", baseURL, string(sl))
 	result := struct {
 		Result string `json:"result"`
 	}{Result: slURL}
+
+	// log to stdout
+	h.l.Info("save to json format",
+		zap.Reflect("URL", result),
+	)
 
 	body, err = json.Marshal(result)
 	if err == nil {

@@ -3,6 +3,8 @@ package handlers
 import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/mocks"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,8 +15,7 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	// Allocation storage for urls
-	h, err := New()
+	h, err := New(zap.NewNop())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,7 +33,11 @@ func TestHandler(t *testing.T) {
 		path       string
 		saveParam  bool
 		checkParam bool
+		mock       *mocks.Repository
 	}
+
+	//mock := &mocks.Repository{}
+	//mock.On("Save").Return()
 
 	// Structure of tests
 	tests := []struct {
@@ -150,6 +155,23 @@ func TestHandler(t *testing.T) {
 				contentType: "application/json; charset=utf-8",
 			},
 		},
+		//{
+		//	name:    "Test Save handler with mock storage #1",
+		//	handler: h.Save,
+		//	request: request{
+		//		method:    http.MethodPost,
+		//		target:    "/",
+		//		path:      "/",
+		//		body:      "http://newlink.ru",
+		//		saveParam: true,
+		//		mock:      mock,
+		//	},
+		//	want: want{
+		//		code:        http.StatusCreated,
+		//		response:    "",
+		//		contentType: "text/plain; charset=utf-8",
+		//	},
+		//},
 	}
 
 	type lastParams struct {
@@ -174,6 +196,12 @@ func TestHandler(t *testing.T) {
 					tt.request.target = lp.shortLink
 				}
 			}
+
+			// mock storage
+			//if tt.request.mock != nil {
+			//	h.SetRepository(tt.request.mock)
+			//}
+
 			request := httptest.NewRequest(tt.request.method, tt.request.target, r)
 
 			// Create new recorder

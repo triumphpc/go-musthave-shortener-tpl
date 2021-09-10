@@ -5,6 +5,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
@@ -13,10 +15,15 @@ import (
 )
 
 func main() {
-	// Allocation handler and storage
-	h, err := handlers.New()
+	// Init logger
+	l, err := logger.New("info")
 	if err != nil {
 		log.Fatal(err)
+	}
+	// Allocation handler and storage
+	h, err := handlers.New(l)
+	if err != nil {
+		l.Fatal("app error exit", zap.Error(err))
 	}
 
 	// Make Routes
@@ -34,9 +41,9 @@ func main() {
 	// Get base URL
 	serverAddress, err := configs.Instance().Param(configs.ServerAddress)
 	if err != nil {
-		log.Fatal(err)
+		l.Fatal("app error exit", zap.Error(err))
 	}
-	log.Println("Start server address:", serverAddress)
+	l.Info("Start server address: " + serverAddress)
 
 	// Init server
 	srv := &http.Server{
@@ -44,22 +51,22 @@ func main() {
 	}
 	// Goroutine
 	go func() {
-		log.Fatal(srv.ListenAndServe())
+		l.Fatal("app error exit", zap.Error(srv.ListenAndServe()))
 	}()
-	log.Print("The service is ready to listen and serve.")
+	l.Info("The service is ready to listen and serve.")
 
 	// Add context for Graceful shutdown
 	killSignal := <-interrupt
 	switch killSignal {
 	case os.Interrupt:
-		log.Print("Got SIGINT...")
+		l.Info("Got SIGINT...")
 	case syscall.SIGTERM:
-		log.Print("Got SIGTERM...")
+		l.Info("Got SIGTERM...")
 	}
 
-	log.Print("The service is shutting down...")
+	l.Info("The service is shutting down...")
 	if err = srv.Shutdown(context.Background()); err != nil {
-		log.Fatal(err)
+		l.Fatal("app error exit", zap.Error(err))
 	}
-	log.Print("Done")
+	l.Info("Done")
 }

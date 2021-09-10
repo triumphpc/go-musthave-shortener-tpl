@@ -5,14 +5,6 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 )
 
-// Repository interface for working with global repository
-type Repository interface {
-	// LinkBy get original link
-	LinkBy(sl ShortLink) (string, error)
-	// Save link to repository
-	Save(url string) (sl ShortLink)
-}
-
 // ErrURLNotFound error by package level
 var ErrURLNotFound = errors.New("url not found")
 

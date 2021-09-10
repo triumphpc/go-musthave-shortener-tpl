@@ -3,23 +3,22 @@ package configs
 import (
 	"errors"
 	"flag"
-	"os"
+	"github.com/caarlos0/env"
+	_ "github.com/caarlos0/env/v6"
 )
 
 var ErrUnknownParam = errors.New("unknown param")
 
 // Config project
 type Config struct {
-	baseURL         string
-	fileStoragePath string
-	serverAddress   string
+	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"unknown"`
+	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
 }
 
 const (
 	BaseURL                = "BASE_URL"
-	BaseURLDefault         = "http://localhost:8080"
 	ServerAddress          = "SERVER_ADDRESS"
-	ServerAddressDefault   = ":8080"
 	FileStoragePath        = "FILE_STORAGE_PATH"
 	FileStoragePathDefault = "unknown"
 )
@@ -37,6 +36,7 @@ var instance *Config
 func Instance() *Config {
 	if instance == nil {
 		instance = new(Config)
+		instance.initInv()
 		instance.init()
 	}
 	return instance
@@ -46,45 +46,30 @@ func Instance() *Config {
 func (c *Config) Param(p string) (string, error) {
 	switch p {
 	case BaseURL:
-		if c.baseURL != "" {
-			return c.baseURL, nil
+		if c.BaseURL != "" {
+			return c.BaseURL, nil
 		}
-		c.baseURL = fromInv(p)
-		return c.baseURL, nil
+		return c.BaseURL, nil
 	case ServerAddress:
-		if c.serverAddress != "" {
-			return c.serverAddress, nil
+		if c.ServerAddress != "" {
+			return c.ServerAddress, nil
 		}
-		c.serverAddress = fromInv(p)
-		return c.serverAddress, nil
+		return c.ServerAddress, nil
 	case FileStoragePath:
-		if c.fileStoragePath != "" {
-			return c.fileStoragePath, nil
+		if c.FileStoragePath != "" {
+			return c.FileStoragePath, nil
 		}
-		c.fileStoragePath = fromInv(p)
-		return c.fileStoragePath, nil
+		return c.FileStoragePath, nil
 	}
 	return "", ErrUnknownParam
 }
 
-// fromInv check from inv
-func fromInv(p string) string {
+// initInv check from inv
+func (c *Config) initInv() {
 	// Get from inv
-	param := os.Getenv(p)
-	if param != "" {
-		return param
-	} else {
-		// return default value
-		switch p {
-		case BaseURL:
-			return BaseURLDefault
-		case ServerAddress:
-			return ServerAddressDefault
-		case FileStoragePath:
-			return FileStoragePathDefault
-		}
+	if err := env.Parse(c); err != nil {
+		return
 	}
-	return ""
 }
 
 // initParams from cli params
@@ -94,7 +79,13 @@ func (c *Config) init() {
 	fs := flag.String(mapVarToInv[FileStoragePath], "", "")
 	flag.Parse()
 
-	c.baseURL = *bu
-	c.serverAddress = *sa
-	c.fileStoragePath = *fs
+	if *bu != "" {
+		c.BaseURL = *bu
+	}
+	if *sa != "" {
+		c.ServerAddress = *sa
+	}
+	if *fs != "" {
+		c.FileStoragePath = *fs
+	}
 }
