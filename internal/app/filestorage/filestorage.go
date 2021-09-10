@@ -31,54 +31,6 @@ func New() (*FileStorage, error) {
 	return s, nil
 }
 
-// producer type for save links in file-storage
-type producer struct {
-	file   *os.File
-	writer *bufio.Writer
-}
-
-// consumer get files from file storage
-type consumer struct {
-	file *os.File
-	// заменяем reader на scanner
-	scanner *bufio.Scanner
-}
-
-// newProducer instance new producer
-func newProducer(fileName string) (*producer, error) {
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
-	if err != nil {
-		return nil, err
-	}
-
-	return &producer{
-		file:   file,
-		writer: bufio.NewWriter(file),
-	}, nil
-}
-
-// NewConsumer instance new consumer
-func NewConsumer(fileName string) (*consumer, error) {
-	f, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
-	if err != nil {
-		return nil, err
-	}
-
-	return &consumer{
-		file: f,
-	}, nil
-}
-
-// Close file for producer
-func (p *producer) close() error {
-	return p.file.Close()
-}
-
-// Close file for consumer
-func (c *consumer) close() error {
-	return c.file.Close()
-}
-
 // LinkBy implement interface for get data from storage
 func (s *FileStorage) LinkBy(sl storage.ShortLink) (string, error) {
 	l, ok := s.data[sl]
@@ -97,31 +49,27 @@ func (s *FileStorage) Save(url string) (sl storage.ShortLink) {
 	if err != nil || fs == configs.FileStoragePathDefault {
 		return
 	}
-	// Create new producer for write links to file storage
-	p, err := newProducer(fs)
-	if nil != err {
+
+	file, err := os.OpenFile(fs, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
 		return
 	}
 
 	// handle for file close
-	defer func(p *producer) {
-		err := p.close()
+	defer func(f *os.File) {
+		err := f.Close()
 		if err != nil {
 			panic(ErrFileStorageNotClose)
 		}
-	}(p)
-
+	}(file)
 	// Convert to gob
-	ge := gob.NewEncoder(p.writer)
+	buffer := bufio.NewWriter(file)
+	ge := gob.NewEncoder(buffer)
 	// encode
 	if err := ge.Encode(s.data); err != nil {
 		return
 	}
-	err = p.writer.Flush()
-	if nil != err {
-		log.Println(err)
-		return
-	}
+	_ = buffer.Flush()
 	return
 }
 
@@ -131,19 +79,21 @@ func (s *FileStorage) Load() error {
 	if err != nil || fs == configs.FileStoragePathDefault {
 		return nil
 	}
-	c, err := NewConsumer(fs)
-	if nil != err {
+
+	file, err := os.OpenFile(fs, os.O_RDONLY|os.O_CREATE, 0777)
+	if err != nil {
 		return err
 	}
 
-	defer func(c *consumer) {
-		err := c.close()
+	// handle for file close
+	defer func(f *os.File) {
+		err := f.Close()
 		if err != nil {
 			panic(ErrFileStorageNotClose)
 		}
-	}(c)
+	}(file)
 
-	gd := gob.NewDecoder(c.file)
+	gd := gob.NewDecoder(file)
 	if err := gd.Decode(&s.data); err != nil {
 		if err != io.EOF {
 			return err
