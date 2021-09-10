@@ -3,9 +3,11 @@ package handlers
 import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/mocks"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,11 +15,10 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	// Allocation storage for urls
-	h := Handler{}
-	s := storage.MockStorage{}
-	s.GenerateMockData()
-	h.s = &s
+	h, err := New(zap.NewNop())
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	type want struct {
 		code        int
@@ -32,7 +33,11 @@ func TestHandler(t *testing.T) {
 		path       string
 		saveParam  bool
 		checkParam bool
+		mock       *mocks.Repository
 	}
+
+	//mock := &mocks.Repository{}
+	//mock.On("Save").Return()
 
 	// Structure of tests
 	tests := []struct {
@@ -97,9 +102,9 @@ func TestHandler(t *testing.T) {
 				path:   "/{id:.+}",
 			},
 			want: want{
-				code:        http.StatusTemporaryRedirect,
+				code:        http.StatusBadRequest,
 				response:    "",
-				contentType: "text/html; charset=utf-8",
+				contentType: "text/plain; charset=utf-8",
 			},
 		},
 		{
@@ -117,6 +122,56 @@ func TestHandler(t *testing.T) {
 				contentType: "text/html; charset=utf-8",
 			},
 		},
+		{
+			name:    "Test SaveJSON handler #1",
+			handler: h.SaveJSON,
+			request: request{
+				method:    http.MethodPost,
+				target:    "/",
+				path:      "/",
+				body:      "{\"urfxxxx\": \"http://vtest.com\"}",
+				saveParam: true,
+			},
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    "unknown url",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name:    "Test SaveJSON handler #2",
+			handler: h.SaveJSON,
+			request: request{
+				method:     http.MethodPost,
+				target:     "/",
+				path:       "/",
+				body:       "{\"url\": \"vvvvvvvv\"}",
+				saveParam:  false,
+				checkParam: true,
+			},
+			want: want{
+				code:        http.StatusCreated,
+				response:    "{\"result\":\"http://localhost:8080/TLMODYLUMG\"}",
+				contentType: "application/json; charset=utf-8",
+			},
+		},
+		//{
+		//	name:    "Test Save handler with mock storage #1",
+		//	handler: h.Save,
+		//	request: request{
+		//		method:    http.MethodPost,
+		//		target:    "/",
+		//		path:      "/",
+		//		body:      "http://newlink.ru",
+		//		saveParam: true,
+		//		mock:      mock,
+		//	},
+		//	want: want{
+		//		code:        http.StatusCreated,
+		//		response:    "",
+		//		contentType: "text/plain; charset=utf-8",
+		//	},
+		//},
 	}
 
 	type lastParams struct {
@@ -141,6 +196,12 @@ func TestHandler(t *testing.T) {
 					tt.request.target = lp.shortLink
 				}
 			}
+
+			// mock storage
+			//if tt.request.mock != nil {
+			//	h.SetRepository(tt.request.mock)
+			//}
+
 			request := httptest.NewRequest(tt.request.method, tt.request.target, r)
 
 			// Create new recorder
@@ -164,6 +225,11 @@ func TestHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 			readLine := strings.TrimSuffix(string(resBody), "\n")
+			// equal response
+			if tt.want.response != "" {
+				assert.Equal(t, tt.want.response, readLine)
+
+			}
 
 			if res.StatusCode == tt.want.code {
 				assert.Positive(t, readLine)
@@ -175,6 +241,7 @@ func TestHandler(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
+
 		})
 	}
 }
