@@ -47,7 +47,8 @@ func main() {
 
 	// Init server
 	srv := &http.Server{
-		Addr: serverAddress,
+		Addr:    serverAddress,
+		Handler: handlers.GzipHandle(rtr),
 	}
 	// Goroutine
 	go func() {
