@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"go.uber.org/zap"
 	"log"
@@ -47,8 +48,9 @@ func main() {
 
 	// Init server
 	srv := &http.Server{
-		Addr:    serverAddress,
-		Handler: handlers.GzipHandle(rtr),
+		Addr: serverAddress,
+		// Send request to conveyor
+		Handler: middlewares.Conveyor(rtr, middlewares.GzipHandle, middlewares.TokenHandle),
 	}
 	// Goroutine
 	go func() {

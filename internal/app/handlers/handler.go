@@ -23,9 +23,9 @@ var ErrInternalError = errors.New("internal error")
 // go:generate mockery --name=Repository --inpackage
 type Repository interface {
 	// LinkBy get original link
-	LinkBy(sl storage.ShortLink) (string, error)
+	LinkBy(sl storages.ShortLink) (string, error)
 	// Save link to repository
-	Save(url string) (sl storage.ShortLink)
+	Save(url string) (sl storages.ShortLink)
 }
 
 // Handler general type for handler
@@ -49,7 +49,7 @@ func New(l *zap.Logger) (h *Handler, err error) {
 	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	if err != nil || fs == configs.FileStoragePathDefault {
 		return &Handler{
-			s: storage.New(),
+			s: storages.New(),
 			l: l,
 		}, nil
 	} else {
@@ -157,7 +157,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		id := params["id"]
 
 		if id != "" {
-			url, err := h.s.LinkBy(storage.ShortLink(id))
+			url, err := h.s.LinkBy(storages.ShortLink(id))
 			if err == nil {
 				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				return

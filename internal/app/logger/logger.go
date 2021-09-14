@@ -26,5 +26,5 @@ func New(level string) (*zap.Logger, error) {
 }
 
 func customMillisTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000Z07"))
+	enc.AppendString(t.UTC().Format("2006-01-02 15:04:05"))
 }
