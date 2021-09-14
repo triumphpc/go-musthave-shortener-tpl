@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/filestorage"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storage"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/memory"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
@@ -23,9 +23,9 @@ var ErrInternalError = errors.New("internal error")
 // go:generate mockery --name=Repository --inpackage
 type Repository interface {
 	// LinkBy get original link
-	LinkBy(sl storages.ShortLink) (string, error)
+	LinkBy(sl memory.ShortLink) (string, error)
 	// Save link to repository
-	Save(url string) (sl storages.ShortLink)
+	Save(url string) (sl memory.ShortLink)
 }
 
 // Handler general type for handler
@@ -49,11 +49,11 @@ func New(l *zap.Logger) (h *Handler, err error) {
 	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	if err != nil || fs == configs.FileStoragePathDefault {
 		return &Handler{
-			s: storages.New(),
+			s: memory.New(),
 			l: l,
 		}, nil
 	} else {
-		s, err := filestorage.New()
+		s, err := file.New()
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +157,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		id := params["id"]
 
 		if id != "" {
-			url, err := h.s.LinkBy(storages.ShortLink(id))
+			url, err := h.s.LinkBy(memory.ShortLink(id))
 			if err == nil {
 				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				return
