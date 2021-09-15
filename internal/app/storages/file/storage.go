@@ -42,6 +42,15 @@ func (s *UserStorage) LinkByShort(userId user.UniqUser, short shortlink.Short) (
 	return url, nil
 }
 
+// LinksByUser return all user links
+func (s *UserStorage) LinksByUser(userId user.UniqUser) (shortlink.ShortLinks, error) {
+	shorts, ok := s.data[userId]
+	if !ok {
+		return shorts, ErrURLNotFound
+	}
+	return shorts, nil
+}
+
 // Save url in storage of short links
 func (s *UserStorage) Save(userId user.UniqUser, url string) shortlink.Short {
 	short := shortlink.Short(helpers.RandomString(10))

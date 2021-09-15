@@ -30,6 +30,7 @@ func main() {
 	// Make Routes
 	rtr := mux.NewRouter()
 	rtr.HandleFunc("/api/shorten", h.SaveJSON)
+	rtr.HandleFunc("/user/urls", h.GetUrls)
 	rtr.HandleFunc("/{id:.+}", h.Get)
 	rtr.HandleFunc("/", h.Save)
 

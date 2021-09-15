@@ -20,6 +20,7 @@ import (
 var ErrBadResponse = errors.New("bad request")
 var ErrUnknownURL = errors.New("unknown url")
 var ErrInternalError = errors.New("internal error")
+var ErrNoContent = errors.New("no content")
 
 // Repository interface for working with global repository
 // go:generate mockery --name=Repository --inpackage
@@ -28,6 +29,8 @@ type Repository interface {
 	LinkByShort(userId user.UniqUser, short shortlink.Short) (string, error)
 	// Save link to repository
 	Save(userId user.UniqUser, url string) shortlink.Short
+	// LinksByUser return all user links
+	LinksByUser(userId user.UniqUser) (shortlink.ShortLinks, error)
 }
 
 // Handler general type for handler
@@ -158,6 +161,46 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 				return
 			} else {
 				logger.Info("Get error", zap.Error(err))
+			}
+		}
+	}
+	setBadResponse(w, ErrBadResponse)
+}
+
+// GetUrls all urls from user
+func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		userIdCtx := r.Context().Value(middlewares.UserIdCtxName)
+		// Convert interface type to user.UniqUser
+		userId := userIdCtx.(string)
+
+		links, err := h.s.LinksByUser(user.UniqUser(userId))
+		if err != nil {
+			http.Error(w, ErrNoContent.Error(), http.StatusNoContent)
+			return
+		}
+
+		type coupleLinks struct {
+			Short  string `json:"short_url"`
+			Origin string `json:"original_url"`
+		}
+		var lks []coupleLinks
+
+		// Get all links
+		for k, v := range links {
+			lks = append(lks, coupleLinks{
+				Short:  string(k),
+				Origin: v,
+			})
+		}
+		body, err := json.Marshal(lks)
+		if err == nil {
+			// Prepare response
+			w.Header().Add("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusCreated)
+			_, err = w.Write(body)
+			if err == nil {
+				return
 			}
 		}
 	}
