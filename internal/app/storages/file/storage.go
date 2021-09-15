@@ -6,7 +6,7 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
-	fw "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file-wrapper"
+	fw "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/filewrapper"
 )
 
 // ErrURLNotFound error by package level
@@ -30,8 +30,8 @@ func New() (*UserStorage, error) {
 }
 
 // LinkByShort implement interface for get data from storage by userId and shortLink
-func (s *UserStorage) LinkByShort(userId user.UniqUser, short shortlink.Short) (string, error) {
-	shorts, ok := s.data[userId]
+func (s *UserStorage) LinkByShort(userID user.UniqUser, short shortlink.Short) (string, error) {
+	shorts, ok := s.data[userID]
 	if !ok {
 		return "", ErrURLNotFound
 	}
@@ -43,8 +43,8 @@ func (s *UserStorage) LinkByShort(userId user.UniqUser, short shortlink.Short) (
 }
 
 // LinksByUser return all user links
-func (s *UserStorage) LinksByUser(userId user.UniqUser) (shortlink.ShortLinks, error) {
-	shorts, ok := s.data[userId]
+func (s *UserStorage) LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error) {
+	shorts, ok := s.data[userID]
 	if !ok {
 		return shorts, ErrURLNotFound
 	}
@@ -52,16 +52,16 @@ func (s *UserStorage) LinksByUser(userId user.UniqUser) (shortlink.ShortLinks, e
 }
 
 // Save url in storage of short links
-func (s *UserStorage) Save(userId user.UniqUser, url string) shortlink.Short {
+func (s *UserStorage) Save(userID user.UniqUser, url string) shortlink.Short {
 	short := shortlink.Short(helpers.RandomString(10))
 	// Get current urls for user
 	currentUrls := shortlink.ShortLinks{}
-	if urls, ok := s.data[userId]; ok {
+	if urls, ok := s.data[userID]; ok {
 		currentUrls = urls
 	}
 	currentUrls[short] = url
 	// Save in map storage or rewrite current
-	s.data[userId] = currentUrls
+	s.data[userID] = currentUrls
 	// Save to file storage
 	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	if err != nil || fs == configs.FileStoragePathDefault {

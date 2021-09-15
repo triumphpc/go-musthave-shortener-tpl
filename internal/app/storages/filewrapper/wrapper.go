@@ -1,5 +1,5 @@
-// Package file_wrapper wrap working with file storage
-package file_wrapper
+// Package filewrapper wrap working with file storage
+package filewrapper
 
 import (
 	"bufio"

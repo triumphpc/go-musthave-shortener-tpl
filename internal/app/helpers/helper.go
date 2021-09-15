@@ -31,13 +31,13 @@ func RandomString(len int) string {
 }
 
 // Decode userId  from encrypted cookie
-func Decode(shaUserId string, userId *string) error {
+func Decode(shaUserID string, userID *string) error {
 	// Init encrypt data
 	if err := keyInit(); err != nil {
 		return err
 	}
 	// Convert to bytes from hex
-	dst, err := hex.DecodeString(shaUserId)
+	dst, err := hex.DecodeString(shaUserID)
 	if err != nil {
 		return err
 	}
@@ -46,17 +46,17 @@ func Decode(shaUserId string, userId *string) error {
 	if err != nil {
 		return err
 	}
-	*userId = string(src)
+	*userID = string(src)
 	return nil
 }
 
 // Encode userId by GCM algorithm and get hex
-func Encode(userId string) (string, error) {
+func Encode(userID string) (string, error) {
 	// Init encrypt data
 	if err := keyInit(); err != nil {
 		return "", err
 	}
-	src := []byte(userId)
+	src := []byte(userID)
 	// Encrypt userId
 	dst := encInstance.aesGCM.Seal(nil, encInstance.nonce, src, nil)
 	// Get hexadecimal string from encode string
@@ -104,41 +104,3 @@ func keyInit() error {
 	}
 	return nil
 }
-
-// Encode symmetric signed hash
-//func Encode(src string) (string, error) {
-
-//key, err := generateRandom(aes.BlockSize)
-//if err != nil {
-//	return "", err
-//}
-//
-//s := []byte(src)
-
-//h := hmac.New(sha256.New, key)
-//h.Write(src)
-//dst := h.Sum(nil)
-//
-//fmt.Printf("%x\n", dst)
-//
-//// Проверим, что подписи сохраняются
-//h2 := hmac.New(sha256.New, key)
-//h2.Write(src)
-//dst2 := h.Sum(nil)
-//
-//fmt.Printf("%x\n", dst2)
-//// Сравнивание хешей
-//fmt.Println("equal hashes", hmac.Equal(dst, dst2))
-
-//}
-
-// generateRandom bytes with needed length
-//func generateRandom(size int) ([]byte, error) {
-//	b := make([]byte, size)
-//	_, err := rand.Read(b)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return b, nil
-//}

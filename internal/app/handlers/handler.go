@@ -26,11 +26,11 @@ var ErrNoContent = errors.New("no content")
 // go:generate mockery --name=Repository --inpackage
 type Repository interface {
 	// LinkByShort get original link
-	LinkByShort(userId user.UniqUser, short shortlink.Short) (string, error)
+	LinkByShort(userID user.UniqUser, short shortlink.Short) (string, error)
 	// Save link to repository
-	Save(userId user.UniqUser, url string) shortlink.Short
+	Save(userID user.UniqUser, url string) shortlink.Short
 	// LinksByUser return all user links
-	LinksByUser(userId user.UniqUser) (shortlink.ShortLinks, error)
+	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
 }
 
 // Handler general type for handler
@@ -66,14 +66,14 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			body, err := ioutil.ReadAll(r.Body)
 			if err == nil {
 				origin := string(body)
-				// Get userId from context
-				userIdCtx := r.Context().Value(middlewares.UserIdCtxName)
-				userId := "default"
+				// Get userID from context
+				userIdCtx := r.Context().Value(middlewares.UserIDCtxName)
+				userID := "default"
 				if userIdCtx != nil {
 					// Convert interface type to user.UniqUser
-					userId = userIdCtx.(string)
+					userID = userIdCtx.(string)
 				}
-				short := string(h.s.Save(user.UniqUser(userId), origin))
+				short := string(h.s.Save(user.UniqUser(userID), origin))
 				// Prepare response
 				w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
@@ -119,13 +119,13 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		setBadResponse(w, ErrUnknownURL)
 		return
 	}
-	userIdCtx := r.Context().Value(middlewares.UserIdCtxName)
-	userId := "default"
+	userIdCtx := r.Context().Value(middlewares.UserIDCtxName)
+	userID := "default"
 	if userIdCtx != nil {
 		// Convert interface type to user.UniqUser
-		userId = userIdCtx.(string)
+		userID = userIdCtx.(string)
 	}
-	sl := h.s.Save(user.UniqUser(userId), url.URL)
+	sl := h.s.Save(user.UniqUser(userID), url.URL)
 
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
@@ -158,13 +158,13 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id := params["id"]
 		if id != "" {
-			userIdCtx := r.Context().Value(middlewares.UserIdCtxName)
-			userId := "default"
+			userIdCtx := r.Context().Value(middlewares.UserIDCtxName)
+			userID := "default"
 			if userIdCtx != nil {
 				// Convert interface type to user.UniqUser
-				userId = userIdCtx.(string)
+				userID = userIdCtx.(string)
 			}
-			url, err := h.s.LinkByShort(user.UniqUser(userId), shortlink.Short(id))
+			url, err := h.s.LinkByShort(user.UniqUser(userID), shortlink.Short(id))
 			if err == nil {
 				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				return
@@ -179,11 +179,10 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		userIdCtx := r.Context().Value(middlewares.UserIdCtxName)
+		userIdCtx := r.Context().Value(middlewares.UserIDCtxName)
 		// Convert interface type to user.UniqUser
-		userId := userIdCtx.(string)
-
-		links, err := h.s.LinksByUser(user.UniqUser(userId))
+		userID := userIdCtx.(string)
+		links, err := h.s.LinksByUser(user.UniqUser(userID))
 		if err != nil {
 			http.Error(w, ErrNoContent.Error(), http.StatusNoContent)
 			return
