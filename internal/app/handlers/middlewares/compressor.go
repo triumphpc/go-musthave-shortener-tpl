@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -17,7 +16,6 @@ type gzipWriter struct {
 // GzipMiddleware compress and decompress zip data
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("ZIP")
 		// Check if client send gzip format
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			reader, err := gzip.NewReader(r.Body)
