@@ -4,7 +4,6 @@ package middlewares
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 )
 
@@ -23,13 +22,13 @@ func CookieMiddleware(next http.Handler) http.Handler {
 		//userID := uuid.New().String()
 		userID := "default2"
 		// Check if set cookie
-		if cookieUserID, err := r.Cookie(CookieUserIDName); err == nil {
-			fmt.Println(cookieUserID)
-			userID = cookieUserID.Value
+		//if cookieUserID, err := r.Cookie(CookieUserIDName); err == nil {
+		//	fmt.Println(cookieUserID)
+		//	userID = cookieUserID.Value
 
-			//logger.Info("cookieUserId", zap.String("cookieUserId", cookieUserID.Value))
-			//_ = helpers.Decode(cookieUserID.Value, &userID)
-		}
+		//logger.Info("cookieUserId", zap.String("cookieUserId", cookieUserID.Value))
+		//_ = helpers.Decode(cookieUserID.Value, &userID)
+		//}
 		// Generate hash from userId
 		//encoded, err := helpers.Encode(userID)
 		//logger.Info("User ID", zap.String("ID", userID))
