@@ -193,11 +193,12 @@ func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 			Origin string `json:"original_url"`
 		}
 		var lks []coupleLinks
+		baseURL, _ := configs.Instance().Param(configs.BaseURL)
 
 		// Get all links
 		for k, v := range links {
 			lks = append(lks, coupleLinks{
-				Short:  string(k),
+				Short:  fmt.Sprintf("%s/%s", baseURL, string(k)),
 				Origin: v,
 			})
 		}
