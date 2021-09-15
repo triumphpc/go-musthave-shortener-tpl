@@ -68,8 +68,11 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 				origin := string(body)
 				// Get userId from context
 				userIdCtx := r.Context().Value(middlewares.UserIdCtxName)
-				// Convert interface type to user.UniqUser
-				userId := userIdCtx.(string)
+				userId := "default"
+				if userIdCtx != nil {
+					// Convert interface type to user.UniqUser
+					userId = userIdCtx.(string)
+				}
 				short := string(h.s.Save(user.UniqUser(userId), origin))
 				// Prepare response
 				w.Header().Add("Content-Type", "text/plain; charset=utf-8")
@@ -117,8 +120,11 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userIdCtx := r.Context().Value(middlewares.UserIdCtxName)
-	// Convert interface type to user.UniqUser
-	userId := userIdCtx.(string)
+	userId := "default"
+	if userIdCtx != nil {
+		// Convert interface type to user.UniqUser
+		userId = userIdCtx.(string)
+	}
 	sl := h.s.Save(user.UniqUser(userId), url.URL)
 
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
@@ -153,8 +159,11 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		id := params["id"]
 		if id != "" {
 			userIdCtx := r.Context().Value(middlewares.UserIdCtxName)
-			// Convert interface type to user.UniqUser
-			userId := userIdCtx.(string)
+			userId := "default"
+			if userIdCtx != nil {
+				// Convert interface type to user.UniqUser
+				userId = userIdCtx.(string)
+			}
 			url, err := h.s.LinkByShort(user.UniqUser(userId), shortlink.Short(id))
 			if err == nil {
 				http.Redirect(w, r, url, http.StatusTemporaryRedirect)

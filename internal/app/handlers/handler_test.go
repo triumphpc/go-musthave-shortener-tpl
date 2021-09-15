@@ -3,8 +3,6 @@ package handlers
 import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/mocks"
-	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,7 +13,7 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	h, err := New(zap.NewNop())
+	h, err := New()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +31,7 @@ func TestHandler(t *testing.T) {
 		path       string
 		saveParam  bool
 		checkParam bool
-		mock       *mocks.Repository
+		//mock       *mocks.Repository
 	}
 
 	//mock := &mocks.Repository{}
