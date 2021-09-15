@@ -67,11 +67,11 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				origin := string(body)
 				// Get userID from context
-				userIdCtx := r.Context().Value(middlewares.UserIDCtxName)
+				userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
 				userID := "default"
-				if userIdCtx != nil {
+				if userIDCtx != nil {
 					// Convert interface type to user.UniqUser
-					userID = userIdCtx.(string)
+					userID = userIDCtx.(string)
 				}
 				short := string(h.s.Save(user.UniqUser(userID), origin))
 				// Prepare response
@@ -119,11 +119,11 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		setBadResponse(w, ErrUnknownURL)
 		return
 	}
-	userIdCtx := r.Context().Value(middlewares.UserIDCtxName)
+	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
 	userID := "default"
-	if userIdCtx != nil {
+	if userIDCtx != nil {
 		// Convert interface type to user.UniqUser
-		userID = userIdCtx.(string)
+		userID = userIDCtx.(string)
 	}
 	sl := h.s.Save(user.UniqUser(userID), url.URL)
 
@@ -158,11 +158,11 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id := params["id"]
 		if id != "" {
-			userIdCtx := r.Context().Value(middlewares.UserIDCtxName)
+			userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
 			userID := "default"
-			if userIdCtx != nil {
+			if userIDCtx != nil {
 				// Convert interface type to user.UniqUser
-				userID = userIdCtx.(string)
+				userID = userIDCtx.(string)
 			}
 			url, err := h.s.LinkByShort(user.UniqUser(userID), shortlink.Short(id))
 			if err == nil {
@@ -179,9 +179,9 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		userIdCtx := r.Context().Value(middlewares.UserIDCtxName)
+		userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
 		// Convert interface type to user.UniqUser
-		userID := userIdCtx.(string)
+		userID := userIDCtx.(string)
 		links, err := h.s.LinksByUser(user.UniqUser(userID))
 		if err != nil {
 			http.Error(w, ErrNoContent.Error(), http.StatusNoContent)
