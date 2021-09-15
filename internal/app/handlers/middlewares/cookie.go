@@ -4,7 +4,6 @@ package middlewares
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"net/http"
 )
 
@@ -20,7 +19,8 @@ var UserIDCtxName ContextType = "ctxUserId"
 func CookieMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate new uuid
-		userID := uuid.New().String()
+		//userID := uuid.New().String()
+		userID := "default2"
 		// Check if set cookie
 		if cookieUserID, err := r.Cookie(CookieUserIDName); err == nil {
 			userID = cookieUserID.Value
@@ -37,7 +37,7 @@ func CookieMiddleware(next http.Handler) http.Handler {
 		cookie := &http.Cookie{
 			Name:  CookieUserIDName,
 			Value: encoded,
-			Path:  "/",
+			//Path:  "/",
 		}
 		http.SetCookie(w, cookie)
 		//} else {
