@@ -17,12 +17,12 @@ import (
 
 func main() {
 	// Init logger
-	l, err := logger.New("info")
+	l, err := logger.Instance()
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Allocation handler and storage
-	h, err := handlers.New(l)
+	h, err := handlers.New()
 	if err != nil {
 		l.Fatal("app error exit", zap.Error(err))
 	}
@@ -50,7 +50,7 @@ func main() {
 	srv := &http.Server{
 		Addr: serverAddress,
 		// Send request to conveyor
-		Handler: middlewares.Conveyor(rtr, middlewares.GzipHandle, middlewares.TokenHandle),
+		Handler: middlewares.Conveyor(rtr, middlewares.GzipMiddleware, middlewares.CookieMiddleware),
 	}
 	// Goroutine
 	go func() {

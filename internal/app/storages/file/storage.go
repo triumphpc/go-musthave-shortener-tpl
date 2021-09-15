@@ -1,14 +1,11 @@
 package file
 
 import (
-	"errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	fw "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file-wrapper"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/memory"
 )
-
-var ErrFileStorageNotClose = errors.New("file storage did not close")
 
 type Storage struct {
 	data map[memory.ShortLink]string

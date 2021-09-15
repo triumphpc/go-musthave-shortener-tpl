@@ -14,8 +14,8 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
-// GzipHandle compress and decompress zip data
-func GzipHandle(next http.Handler) http.Handler {
+// GzipMiddleware compress and decompress zip data
+func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("ZIP")
 		// Check if client send gzip format

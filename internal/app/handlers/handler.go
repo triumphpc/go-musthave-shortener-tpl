@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/memory"
 	"go.uber.org/zap"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -31,7 +31,6 @@ type Repository interface {
 // Handler general type for handler
 type Handler struct {
 	s Repository
-	l *zap.Logger
 }
 
 // URL it's users full url
@@ -44,13 +43,12 @@ func (h *Handler) SetRepository(r Repository) {
 }
 
 // New Allocation new handler
-func New(l *zap.Logger) (h *Handler, err error) {
+func New() (h *Handler, err error) {
 	// If set file storage path
 	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	if err != nil || fs == configs.FileStoragePathDefault {
 		return &Handler{
 			s: memory.New(),
-			l: l,
 		}, nil
 	} else {
 		s, err := file.New()
@@ -59,7 +57,6 @@ func New(l *zap.Logger) (h *Handler, err error) {
 		}
 		return &Handler{
 			s: s,
-			l: l,
 		}, nil
 	}
 }
@@ -132,9 +129,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	}{Result: slURL}
 
 	// log to stdout
-	h.l.Info("save to json format",
-		zap.Reflect("URL", result),
-	)
+	logger.Info("save to json format", zap.Reflect("URL", result))
 
 	body, err = json.Marshal(result)
 	if err == nil {
@@ -162,7 +157,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				return
 			} else {
-				log.Printf("%v", err)
+				logger.Info("Get error", zap.Error(err))
 			}
 		}
 	}
