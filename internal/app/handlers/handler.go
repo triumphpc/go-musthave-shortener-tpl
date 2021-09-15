@@ -206,7 +206,7 @@ func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			// Prepare response
 			w.Header().Add("Content-Type", "application/json; charset=utf-8")
-			w.WriteHeader(http.StatusCreated)
+			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(body)
 			if err == nil {
 				return

@@ -4,6 +4,7 @@ package middlewares
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"net/http"
 )
 
@@ -19,21 +20,19 @@ var UserIDCtxName ContextType = "ctxUserId"
 func CookieMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate new uuid
-		//userID := uuid.New().String()
-		userID := "default2"
+		userID := uuid.New().String()
 		// Check if set cookie
-		//if cookieUserID, err := r.Cookie(CookieUserIDName); err == nil {
-		//	fmt.Println(cookieUserID)
-		//	userID = cookieUserID.Value
-
-		//logger.Info("cookieUserId", zap.String("cookieUserId", cookieUserID.Value))
-		//_ = helpers.Decode(cookieUserID.Value, &userID)
-		//}
+		if cookieUserID, err := r.Cookie(CookieUserIDName); err == nil {
+			userID = cookieUserID.Value
+			//
+			//logger.Info("cookieUserId", zap.String("cookieUserId", cookieUserID.Value))
+			//_ = helpers.Decode(cookieUserID.Value, &userID)
+		}
 		// Generate hash from userId
 		//encoded, err := helpers.Encode(userID)
 		//logger.Info("User ID", zap.String("ID", userID))
 		//logger.Info("User encoded", zap.String("Encoded", encoded))
-		encoded := "default"
+		encoded := userID
 		//if err == nil {
 		cookie := &http.Cookie{
 			Name:  CookieUserIDName,
