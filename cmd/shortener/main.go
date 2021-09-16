@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
@@ -26,17 +28,11 @@ func main() {
 	if err != nil {
 		l.Fatal("app error exit", zap.Error(err))
 	}
-
-	// Make Routes
-	rtr := mux.NewRouter()
-	rtr.HandleFunc("/api/shorten", h.SaveJSON)
-	rtr.HandleFunc("/user/urls", h.GetUrls)
-	rtr.HandleFunc("/{id:.+}", h.Get)
-	rtr.HandleFunc("/", h.Save)
-
+	// Get routes
+	rtr := routes.Router(h)
 	http.Handle("/", rtr)
 
-	// context with cancel func
+	// Context with cancel func
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
@@ -66,6 +62,16 @@ func main() {
 		l.Info("Got SIGINT...")
 	case syscall.SIGTERM:
 		l.Info("Got SIGTERM...")
+	}
+
+	// database close
+	conn, err := db.Instance()
+	if err == nil {
+		l.Info("Closing connect to db")
+		err := conn.Close()
+		if err != nil {
+			l.Info("Closing don't close")
+		}
 	}
 
 	l.Info("The service is shutting down...")

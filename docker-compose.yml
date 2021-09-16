@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  main:
+    build: ./
+#    command: ./wait-for-postgres.sh db ./main
+    command: ./main
+    ports:
+      - "8080:8080"
+    depends_on:
+#      - sqlite3
+      - db
+    environment:
+      - DB_PASSWORD=qwerty
+      - DATABASE_DSN=postgres://postgres:qwerty@localhost:5436/postgres?sslmode=disable
+
+#  sqlite3:
+#    image: nouchka/sqlite3:latest
+#    stdin_open: true
+#    tty: true
+#    volumes:
+#      - ./db/:/root/db/
+
+  db:
+    restart: always
+    image: postgres:latest
+    volumes:
+      - ./db/postgres/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=qwerty
+    ports:
+      - "5436:5432"
