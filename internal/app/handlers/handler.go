@@ -158,13 +158,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id := params["id"]
 		if id != "" {
-			userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-			userID := "default"
-			if userIDCtx != nil {
-				// Convert interface type to user.UniqUser
-				userID = userIDCtx.(string)
-			}
-			url, err := h.s.LinkByShort(user.UniqUser(userID), shortlink.Short(id))
+			url, err := h.s.LinkByShort("all", shortlink.Short(id))
 			if err == nil {
 				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				return

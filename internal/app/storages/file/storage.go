@@ -62,6 +62,7 @@ func (s *UserStorage) Save(userID user.UniqUser, url string) shortlink.Short {
 	currentUrls[short] = url
 	// Save in map storage or rewrite current
 	s.data[userID] = currentUrls
+	s.data["all"] = currentUrls
 	// Save to file storage
 	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	if err != nil || fs == configs.FileStoragePathDefault {
