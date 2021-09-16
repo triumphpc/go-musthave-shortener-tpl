@@ -30,9 +30,10 @@ func main() {
 	// Make Routes
 	rtr := mux.NewRouter()
 	rtr.HandleFunc("/api/shorten", h.SaveJSON)
-	rtr.HandleFunc("/user/urls", h.GetUrls)
+	//rtr.HandleFunc("/user/urls", h.GetUrls)
+	rtr.Handle("/user/urls", middlewares.CookieMiddleware(handlers.GetUrlsHandler{H: h}))
 	rtr.HandleFunc("/{id:.+}", h.Get)
-	rtr.HandleFunc("/", h.Save)
+	rtr.Handle("/", middlewares.CookieMiddleware(handlers.SaveHandler{H: h}))
 
 	http.Handle("/", rtr)
 
@@ -51,7 +52,7 @@ func main() {
 	srv := &http.Server{
 		Addr: serverAddress,
 		// Send request to conveyor
-		Handler: middlewares.Conveyor(rtr, middlewares.GzipMiddleware, middlewares.CookieMiddleware),
+		Handler: middlewares.Conveyor(rtr, middlewares.GzipMiddleware),
 	}
 	// Goroutine
 	go func() {
