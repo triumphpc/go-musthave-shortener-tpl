@@ -22,7 +22,7 @@ func Instance() (*sql.DB, error) {
 		}
 		instance = new(sql.DB)
 		// Database init
-		inst, err := sql.Open("postgres", dsn)
+		inst, err := sql.Open("postgres", dsn+"?sslmode=disable")
 		if err != nil {
 			return instance, err
 		}

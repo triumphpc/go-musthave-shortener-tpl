@@ -12,7 +12,8 @@ services:
       - db
     environment:
       - DB_PASSWORD=qwerty
-      - DATABASE_DSN=postgres://postgres:qwerty@localhost:5436/postgres?sslmode=disable
+      - DATABASE_DSN=postgres://postgres:qwerty@localhost:5436/postgres
+#      - DATABASE_DSN=postgres://postgres:postgres@postgres:5432/praktikum
 
 #  sqlite3:
 #    image: nouchka/sqlite3:latest
