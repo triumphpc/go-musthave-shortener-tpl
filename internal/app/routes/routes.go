@@ -15,7 +15,7 @@ func Router(h *handlers.Handler) *mux.Router {
 	// Get user session links in JSON
 	rtr.HandleFunc("/user/urls", h.GetUrls).Methods(http.MethodGet)
 	// Ping db connection
-	rtr.Handle("/ping", ping.Handler{}).Methods(http.MethodGet)
+	rtr.Handle("/ping", ping.Handler{})
 	// Get origin by short link
 	rtr.HandleFunc("/{id:.+}", h.Get).Methods(http.MethodGet)
 	// Save origin to short

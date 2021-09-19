@@ -14,9 +14,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		if err := conn.PingContext(r.Context()); err == nil {
 			w.WriteHeader(http.StatusOK)
-		} else {
-			logger.Info("not connect to db", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 	}
+	logger.Info("not connect to db", zap.Error(err))
+	w.WriteHeader(http.StatusInternalServerError)
 }
