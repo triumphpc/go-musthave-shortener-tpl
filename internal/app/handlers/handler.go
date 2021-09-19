@@ -7,9 +7,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
+	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -25,8 +27,8 @@ var ErrNoContent = errors.New("no content")
 // Repository interface for working with global repository
 // go:generate mockery --name=Repository --inpackage
 type Repository interface {
-	// LinkByShort get original link
-	LinkByShort(userID user.UniqUser, short shortlink.Short) (string, error)
+	// LinkByShort get original link from all storage
+	LinkByShort(short shortlink.Short) (string, error)
 	// Save link to repository
 	Save(userID user.UniqUser, url string) shortlink.Short
 	// LinksByUser return all user links
@@ -43,19 +45,30 @@ type URL struct {
 	URL string `json:"url"`
 }
 
-func (h *Handler) SetRepository(r Repository) {
-	h.s = r
-}
-
 // New Allocation new handler
-func New() (h *Handler, err error) {
-	s, err := file.New()
-	if err != nil {
-		return nil, err
+func New() (*Handler, error) {
+	// Check in db has
+	_, err := db.Instance()
+	if err == nil {
+		logger.Info("Set db handler")
+		s, err := dbh.New()
+		if err != nil {
+			return nil, err
+		}
+		return &Handler{
+			s: s,
+		}, nil
+	} else {
+		logger.Info("Set file handler")
+		// File and memory storage
+		s, err := file.New()
+		if err != nil {
+			return nil, err
+		}
+		return &Handler{
+			s: s,
+		}, nil
 	}
-	return &Handler{
-		s: s,
-	}, nil
 }
 
 // Save convert link to shorting and store in database
@@ -158,7 +171,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id := params["id"]
 		if id != "" {
-			url, err := h.s.LinkByShort("all", shortlink.Short(id))
+			url, err := h.s.LinkByShort(shortlink.Short(id))
 			if err == nil {
 				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				return

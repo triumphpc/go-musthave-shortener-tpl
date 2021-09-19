@@ -1,28 +1,17 @@
 version: '3.8'
 
 services:
-  main:
-    build: ./
-#    command: ./wait-for-postgres.sh db ./main
+  go_service:
+    build:
+      context: .
+      dockerfile: dockerfiles/go_service.dockerfile
     command: ./main
     ports:
       - "8080:8080"
     depends_on:
-#      - sqlite3
-      - db
-    environment:
-      - DB_PASSWORD=qwerty
-      - DATABASE_DSN=postgres://postgres:qwerty@localhost:5436/postgres
-#      - DATABASE_DSN=postgres://postgres:postgres@postgres:5432/praktikum
+      - postgre_service
 
-#  sqlite3:
-#    image: nouchka/sqlite3:latest
-#    stdin_open: true
-#    tty: true
-#    volumes:
-#      - ./db/:/root/db/
-
-  db:
+  postgre_service:
     restart: always
     image: postgres:latest
     volumes:

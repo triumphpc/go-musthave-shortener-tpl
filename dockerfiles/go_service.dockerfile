@@ -1,8 +1,10 @@
 FROM golang:latest
 
+# create workdir
 ADD . /app/
 WORKDIR /app
 
+# copy all file from to workdir
 COPY . .
 
 # instal psql

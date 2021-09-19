@@ -1,18 +1,21 @@
 package ping
 
 import (
+	"context"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"go.uber.org/zap"
 	"net/http"
 )
 
-type Handler struct{}
+type Handler struct {
+	ctx context.Context
+}
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	conn, err := db.Instance()
 	if err == nil {
-		if err := conn.Ping(); err == nil {
+		if err := conn.PingContext(h.ctx); err == nil {
 			w.WriteHeader(http.StatusOK)
 		} else {
 			logger.Info("not connect to db", zap.Error(err))
