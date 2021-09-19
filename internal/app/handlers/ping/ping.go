@@ -1,6 +1,7 @@
 package ping
 
 import (
+	"context"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"go.uber.org/zap"
@@ -9,10 +10,10 @@ import (
 
 type Handler struct{}
 
-func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h Handler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	conn, err := db.Instance()
 	if err == nil {
-		if err := conn.PingContext(r.Context()); err == nil {
+		if err := conn.PingContext(context.Background()); err == nil {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
