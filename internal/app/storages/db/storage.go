@@ -70,11 +70,12 @@ func New() (*PostgreSQLStorage, error) {
 
 // LinkByShort implement interface for get data from storage by userId and shortLink
 func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
-	sql := "select origin from storage.short_links where short=$1"
+	query := "select origin from storage.short_links where short=$1"
 	dbd, _ := db.Instance()
 
 	var origin string
-	err := dbd.QueryRowContext(context.Background(), sql, string(short)).Scan(&origin)
+	err := dbd.QueryRowContext(context.Background(), query, string(short)).Scan(&origin)
+
 	if err != nil {
 		return "", ErrURLNotFound
 	}
@@ -83,11 +84,16 @@ func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
 
 // LinksByUser return all user links
 func (s *PostgreSQLStorage) LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error) {
-	sql := "select origin, short from storage.short_links where user_id=$1"
+	query := "select origin, short from storage.short_links where user_id=$1"
 	dbd, _ := db.Instance()
 
 	origins := shortlink.ShortLinks{}
-	rows, err := dbd.QueryContext(context.Background(), sql, string(userID))
+	rows, err := dbd.QueryContext(context.Background(), query, string(userID))
+	if err != nil {
+		return origins, err
+	}
+
+	err = rows.Err()
 	if err != nil {
 		return origins, err
 	}

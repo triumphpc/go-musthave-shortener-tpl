@@ -212,6 +212,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	// Validation id params
 	params := mux.Vars(r)
 	id := params["id"]
+	fmt.Print(id)
 	if id != "" {
 		url, err := h.s.LinkByShort(shortlink.Short(id))
 		if err == nil {
