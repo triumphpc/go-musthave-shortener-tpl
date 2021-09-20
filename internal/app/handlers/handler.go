@@ -102,12 +102,14 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 // SaveJSON convert link to shorting and store in database
 func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	body, err := bodyFromJSON(&w, r)
-	if err == nil {
+	if err != nil {
+		setBadResponse(w, ErrInternalError)
 		return
 	}
 	// Get url from json data
 	url := shortlink.URL{}
 	err = json.Unmarshal(body, &url)
+
 	if err != nil {
 		setBadResponse(w, ErrUnknownURL)
 		return
@@ -151,7 +153,8 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 // BunchSaveJSON save data and return from mass
 func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	body, err := bodyFromJSON(&w, r)
-	if err == nil {
+	if err != nil {
+		setBadResponse(w, ErrInternalError)
 		return
 	}
 	// Get url from json data
@@ -176,8 +179,17 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 		shorts[k].Short = fmt.Sprintf("%s/%s", baseURL, shorts[k].Short)
 	}
 
-	fmt.Println(shorts)
-
+	body, err = json.Marshal(shorts)
+	if err == nil {
+		// Prepare response
+		w.Header().Add("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusCreated)
+		_, err = w.Write(body)
+		if err == nil {
+			return
+		}
+	}
+	setBadResponse(w, ErrInternalError)
 }
 
 // bodyFromJSON get bytes from JSON requests

@@ -10,6 +10,8 @@ services:
       - "8080:8080"
     depends_on:
       - postgre_service
+#    environment:
+#      - DATABASE_DSN=postgres://postgres:qwerty@postgre_service:5436/postgres?sslmode=disable
 
   postgre_service:
     restart: always

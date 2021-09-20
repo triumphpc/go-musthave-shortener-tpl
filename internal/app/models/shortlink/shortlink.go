@@ -19,6 +19,6 @@ type URL struct {
 
 // URLs from mass save
 type URLs struct {
-	Origin string `json:"original_url"`
 	ID     string `json:"correlation_id"`
+	Origin string `json:"original_url"`
 }

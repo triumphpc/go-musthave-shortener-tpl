@@ -123,6 +123,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 		Origin,
 		Short string
 	}
+
 	var buffer []temp
 	for _, v := range urls {
 		var t = temp{
@@ -141,10 +142,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 	}
 	// Rollback handler
 	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
-		if err != nil {
-			logger.Info("Rollback error", zap.Error(err))
-		}
+		_ = tx.Rollback()
 	}(tx)
 	// Prepare statement
 	stmt, err := tx.PrepareContext(context.Background(), sqlBunchNewRecord)
@@ -161,15 +159,13 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 
 	for _, v := range buffer {
 		// Add record to transaction
-		if _, err = stmt.ExecContext(context.Background(), "all", v.Origin, v.Short, v.ID); err != nil {
-			if err != nil {
-				logger.Info("Save bunch error", zap.Error(err))
-			} else {
-				shorts = append(shorts, shortlink.ShortURLs{
-					Short: v.Short,
-					ID:    v.ID,
-				})
-			}
+		if _, err = stmt.ExecContext(context.Background(), "all", v.Origin, v.Short, v.ID); err == nil {
+			shorts = append(shorts, shortlink.ShortURLs{
+				Short: v.Short,
+				ID:    v.ID,
+			})
+		} else {
+			logger.Info("Save bunch error", zap.Error(err))
 		}
 	}
 	// шаг 4 — сохраняем изменения
