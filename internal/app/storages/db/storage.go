@@ -141,6 +141,10 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 	}
 	dbd, _ := db.Instance()
 	var shorts []shortlink.ShortURLs
+
+	// Delete old records for tests
+	_, _ = dbd.Exec("truncate table storage.short_links;")
+
 	// Start transaction
 	tx, err := dbd.Begin()
 	if err != nil {
