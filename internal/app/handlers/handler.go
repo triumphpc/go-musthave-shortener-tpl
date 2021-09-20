@@ -31,6 +31,8 @@ type Repository interface {
 	LinkByShort(short shortlink.Short) (string, error)
 	// Save link to repository
 	Save(userID user.UniqUser, url string) shortlink.Short
+	// BunchSave save mass urls and generate shorts
+	BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
 	// LinksByUser return all user links
 	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
 }
@@ -38,11 +40,6 @@ type Repository interface {
 // Handler general type for handler
 type Handler struct {
 	s Repository
-}
-
-// URL it's users full url
-type URL struct {
-	URL string `json:"url"`
 }
 
 // New Allocation new handler
@@ -73,31 +70,28 @@ func New() (*Handler, error) {
 
 // Save convert link to shorting and store in database
 func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		// Validation
-		if r.Body != http.NoBody {
-			body, err := ioutil.ReadAll(r.Body)
-			if err == nil {
-				origin := string(body)
-				// Get userID from context
-				userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-				userID := "default"
-				if userIDCtx != nil {
-					// Convert interface type to user.UniqUser
-					userID = userIDCtx.(string)
-				}
-				short := string(h.s.Save(user.UniqUser(userID), origin))
-				// Prepare response
-				w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-				w.WriteHeader(http.StatusCreated)
+	if r.Body != http.NoBody {
+		body, err := ioutil.ReadAll(r.Body)
+		if err == nil {
+			origin := string(body)
+			// Get userID from context
+			userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
+			userID := "default"
+			if userIDCtx != nil {
+				// Convert interface type to user.UniqUser
+				userID = userIDCtx.(string)
+			}
+			short := string(h.s.Save(user.UniqUser(userID), origin))
+			// Prepare response
+			w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+			w.WriteHeader(http.StatusCreated)
 
-				baseURL, err := configs.Instance().Param(configs.BaseURL)
+			baseURL, err := configs.Instance().Param(configs.BaseURL)
+			if err == nil {
+				slURL := fmt.Sprintf("%s/%s", baseURL, short)
+				_, err = w.Write([]byte(slURL))
 				if err == nil {
-					slURL := fmt.Sprintf("%s/%s", baseURL, short)
-					_, err = w.Write([]byte(slURL))
-					if err == nil {
-						return
-					}
+					return
 				}
 			}
 		}
@@ -107,22 +101,12 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 // SaveJSON convert link to shorting and store in database
 func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		setBadResponse(w, ErrBadResponse)
-		return
-	}
-	// Validation
-	if r.Body == http.NoBody {
-		setBadResponse(w, ErrBadResponse)
-		return
-	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		setBadResponse(w, ErrUnknownURL)
+	body, err := bodyFromJSON(&w, r)
+	if err == nil {
 		return
 	}
 	// Get url from json data
-	url := URL{}
+	url := shortlink.URL{}
 	err = json.Unmarshal(body, &url)
 	if err != nil {
 		setBadResponse(w, ErrUnknownURL)
@@ -164,20 +148,65 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	setBadResponse(w, ErrInternalError)
 }
 
+// BunchSaveJSON save data and return from mass
+func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
+	body, err := bodyFromJSON(&w, r)
+	if err == nil {
+		return
+	}
+	// Get url from json data
+	var urls []shortlink.URLs
+	err = json.Unmarshal(body, &urls)
+	if err != nil {
+		setBadResponse(w, ErrUnknownURL)
+		return
+	}
+	shorts, err := h.s.BunchSave(urls)
+	if err != nil {
+		setBadResponse(w, ErrInternalError)
+		return
+	}
+	// Determine base url
+	baseURL, err := configs.Instance().Param(configs.BaseURL)
+	if err != nil {
+		setBadResponse(w, ErrBadResponse)
+	}
+	// Prepare results
+	for k := range shorts {
+		shorts[k].Short = fmt.Sprintf("%s/%s", baseURL, shorts[k].Short)
+	}
+
+	fmt.Println(shorts)
+
+}
+
+// bodyFromJSON get bytes from JSON requests
+func bodyFromJSON(w *http.ResponseWriter, r *http.Request) ([]byte, error) {
+	var body []byte
+	if r.Body == http.NoBody {
+		setBadResponse(*w, ErrBadResponse)
+		return body, ErrBadResponse
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		setBadResponse(*w, ErrUnknownURL)
+		return body, ErrUnknownURL
+	}
+	return body, nil
+}
+
 // Get fid origin link from storage
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		// Validation id params
-		params := mux.Vars(r)
-		id := params["id"]
-		if id != "" {
-			url, err := h.s.LinkByShort(shortlink.Short(id))
-			if err == nil {
-				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-				return
-			} else {
-				logger.Info("Get error", zap.Error(err))
-			}
+	// Validation id params
+	params := mux.Vars(r)
+	id := params["id"]
+	if id != "" {
+		url, err := h.s.LinkByShort(shortlink.Short(id))
+		if err == nil {
+			http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+			return
+		} else {
+			logger.Info("Get error", zap.Error(err))
 		}
 	}
 	setBadResponse(w, ErrBadResponse)
@@ -185,39 +214,37 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-		// Convert interface type to user.UniqUser
-		userID := userIDCtx.(string)
-		links, err := h.s.LinksByUser(user.UniqUser(userID))
-		if err != nil {
-			http.Error(w, ErrNoContent.Error(), http.StatusNoContent)
-			return
-		}
+	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
+	// Convert interface type to user.UniqUser
+	userID := userIDCtx.(string)
+	links, err := h.s.LinksByUser(user.UniqUser(userID))
+	if err != nil {
+		http.Error(w, ErrNoContent.Error(), http.StatusNoContent)
+		return
+	}
 
-		type coupleLinks struct {
-			Short  string `json:"short_url"`
-			Origin string `json:"original_url"`
-		}
-		var lks []coupleLinks
-		baseURL, _ := configs.Instance().Param(configs.BaseURL)
+	type coupleLinks struct {
+		Short  string `json:"short_url"`
+		Origin string `json:"original_url"`
+	}
+	var lks []coupleLinks
+	baseURL, _ := configs.Instance().Param(configs.BaseURL)
 
-		// Get all links
-		for k, v := range links {
-			lks = append(lks, coupleLinks{
-				Short:  fmt.Sprintf("%s/%s", baseURL, string(k)),
-				Origin: v,
-			})
-		}
-		body, err := json.Marshal(lks)
+	// Get all links
+	for k, v := range links {
+		lks = append(lks, coupleLinks{
+			Short:  fmt.Sprintf("%s/%s", baseURL, string(k)),
+			Origin: v,
+		})
+	}
+	body, err := json.Marshal(lks)
+	if err == nil {
+		// Prepare response
+		w.Header().Add("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(body)
 		if err == nil {
-			// Prepare response
-			w.Header().Add("Content-Type", "application/json; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(body)
-			if err == nil {
-				return
-			}
+			return
 		}
 	}
 	setBadResponse(w, ErrBadResponse)

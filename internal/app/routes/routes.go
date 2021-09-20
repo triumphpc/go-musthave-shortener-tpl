@@ -12,6 +12,8 @@ func Router(h *handlers.Handler) *mux.Router {
 	rtr := mux.NewRouter()
 	// Save link from JSON format
 	rtr.HandleFunc("/api/shorten", h.SaveJSON).Methods(http.MethodPost)
+	// Mass save short links
+	rtr.HandleFunc("/api/shorten/batch", h.BunchSaveJSON).Methods(http.MethodPost)
 	// Get user session links in JSON
 	rtr.HandleFunc("/user/urls", h.GetUrls).Methods(http.MethodGet)
 	// Ping db connection
