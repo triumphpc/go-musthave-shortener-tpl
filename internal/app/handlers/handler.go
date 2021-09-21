@@ -30,7 +30,7 @@ type Repository interface {
 	// LinkByShort get original link from all storage
 	LinkByShort(short shortlink.Short) (string, error)
 	// Save link to repository
-	Save(userID user.UniqUser, url string) shortlink.Short
+	Save(userID user.UniqUser, url string) (shortlink.Short, error)
 	// BunchSave save mass urls and generate shorts
 	BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
 	// LinksByUser return all user links
@@ -81,10 +81,14 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 				// Convert interface type to user.UniqUser
 				userID = userIDCtx.(string)
 			}
-			short := string(h.s.Save(user.UniqUser(userID), origin))
+			short, err := h.s.Save(user.UniqUser(userID), origin)
+			status := http.StatusCreated
+			if errors.Is(err, dbh.ErrAlreadyHasShort) {
+				status = http.StatusConflict
+			}
 			// Prepare response
 			w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(http.StatusCreated)
+			w.WriteHeader(status)
 
 			baseURL, err := configs.Instance().Param(configs.BaseURL)
 			if err == nil {
@@ -124,13 +128,16 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		// Convert interface type to user.UniqUser
 		userID = userIDCtx.(string)
 	}
-	sl := h.s.Save(user.UniqUser(userID), url.URL)
-
+	short, err := h.s.Save(user.UniqUser(userID), url.URL)
+	status := http.StatusCreated
+	if errors.Is(err, dbh.ErrAlreadyHasShort) {
+		status = http.StatusConflict
+	}
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
 		setBadResponse(w, ErrBadResponse)
 	}
-	slURL := fmt.Sprintf("%s/%s", baseURL, string(sl))
+	slURL := fmt.Sprintf("%s/%s", baseURL, string(short))
 	result := struct {
 		Result string `json:"result"`
 	}{Result: slURL}
@@ -141,7 +148,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		// Prepare response
 		w.Header().Add("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(status)
 		_, err = w.Write(body)
 		if err == nil {
 			return

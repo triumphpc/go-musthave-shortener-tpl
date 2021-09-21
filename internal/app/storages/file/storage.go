@@ -52,7 +52,7 @@ func (s *UserStorage) LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, e
 }
 
 // Save url in storage of short links
-func (s *UserStorage) Save(userID user.UniqUser, url string) shortlink.Short {
+func (s *UserStorage) Save(userID user.UniqUser, url string) (shortlink.Short, error) {
 	short := shortlink.Short(helpers.RandomString(10))
 	// Get current urls for user
 	currentUrls := shortlink.ShortLinks{}
@@ -66,10 +66,10 @@ func (s *UserStorage) Save(userID user.UniqUser, url string) shortlink.Short {
 	// Save to file storage
 	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	if err != nil || fs == configs.FileStoragePathDefault {
-		return short
+		return short, nil
 	}
 	_ = fw.Write(fs, s.data)
-	return short
+	return short, nil
 }
 
 // Load all links to map

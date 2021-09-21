@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/jackc/pgerrcode"
+	"github.com/lib/pq"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
@@ -17,6 +19,9 @@ type PostgreSQLStorage struct{}
 
 // ErrURLNotFound error by package level
 var ErrURLNotFound = errors.New("url not found")
+
+// ErrAlreadyHasShort if exist
+var ErrAlreadyHasShort = errors.New("already has short")
 
 // Scheme of database
 const scheme = `
@@ -47,8 +52,9 @@ create unique index if not exists short_links_user_id_origin_uindex
 const sqlNewRecord = `
 insert into storage.short_links (id, user_id, origin, short) 
 values (default, $1, $2, $3)
-on conflict (user_id, origin)
-do nothing;
+`
+const sqlGetCurrentRecord = `
+select short from storage.short_links where user_id=$1 and origin=$2
 `
 
 // sqlBunchNewRecord for new record in db
@@ -111,14 +117,23 @@ func (s *PostgreSQLStorage) LinksByUser(userID user.UniqUser) (shortlink.ShortLi
 }
 
 // Save url in storage of short links
-func (s *PostgreSQLStorage) Save(userID user.UniqUser, url string) shortlink.Short {
+func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink.Short, error) {
 	short := shortlink.Short(helpers.RandomString(10))
 	// Save to database
-	err := db.Insert(context.Background(), sqlNewRecord, userID, url, short)
+	err := db.Insert(context.Background(), sqlNewRecord, userID, origin, short)
 	if err != nil {
-		panic(err)
+		if err, ok := err.(*pq.Error); ok {
+			if err.Code == pgerrcode.UniqueViolation {
+				// take current link
+				dbd, _ := db.Instance()
+				var short string
+				_ = dbd.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
+				return shortlink.Short(short), ErrAlreadyHasShort
+			}
+		}
+		return short, err
 	}
-	return short
+	return short, nil
 }
 
 // BunchSave save mass urls
