@@ -13,7 +13,7 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	h, err := New()
+	h, err := New(nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,9 +33,6 @@ func TestHandler(t *testing.T) {
 		checkParam bool
 		//mock       *mocks.Repository
 	}
-
-	//mock := &mocks.Repository{}
-	//mock.On("Save").Return()
 
 	// Structure of tests
 	tests := []struct {
