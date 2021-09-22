@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
@@ -15,7 +14,9 @@ import (
 )
 
 // PostgreSQLStorage storage
-type PostgreSQLStorage struct{}
+type PostgreSQLStorage struct {
+	db *sql.DB
+}
 
 // ErrURLNotFound error by package level
 var ErrURLNotFound = errors.New("url not found")
@@ -65,22 +66,29 @@ on conflict (user_id, origin)
 do nothing;
 `
 
+// sqlSelectFromOrigin select origin
+const sqlSelectOrigin = `
+select origin from storage.short_links where short=$1
+`
+
+// sqlSelectOriginAndShort select origin and short
+const sqlSelectOriginAndShort = `
+select origin, short from storage.short_links where user_id=$1
+`
+
 // New Instance new Storage with not null fields
-func New() (*PostgreSQLStorage, error) {
+func New(c *sql.DB) (*PostgreSQLStorage, error) {
 	// Check if scheme exist
-	if err := db.Insert(context.Background(), scheme); err != nil {
-		return &PostgreSQLStorage{}, err
+	if _, err := c.ExecContext(context.Background(), scheme); err != nil {
+		return nil, err
 	}
-	return &PostgreSQLStorage{}, nil
+	return &PostgreSQLStorage{c}, nil
 }
 
 // LinkByShort implement interface for get data from storage by userId and shortLink
 func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
-	query := "select origin from storage.short_links where short=$1"
-	dbd, _ := db.Instance()
-
 	var origin string
-	err := dbd.QueryRowContext(context.Background(), query, string(short)).Scan(&origin)
+	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin)
 
 	if err != nil {
 		return "", ErrURLNotFound
@@ -90,11 +98,8 @@ func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
 
 // LinksByUser return all user links
 func (s *PostgreSQLStorage) LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error) {
-	query := "select origin, short from storage.short_links where user_id=$1"
-	dbd, _ := db.Instance()
-
 	origins := shortlink.ShortLinks{}
-	rows, err := dbd.QueryContext(context.Background(), query, string(userID))
+	rows, err := s.db.QueryContext(context.Background(), sqlSelectOriginAndShort, string(userID))
 	if err != nil {
 		return origins, err
 	}
@@ -120,14 +125,12 @@ func (s *PostgreSQLStorage) LinksByUser(userID user.UniqUser) (shortlink.ShortLi
 func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink.Short, error) {
 	short := shortlink.Short(helpers.RandomString(10))
 	// Save to database
-	err := db.Insert(context.Background(), sqlNewRecord, userID, origin, short)
-	if err != nil {
+	if _, err := s.db.ExecContext(context.Background(), sqlNewRecord, userID, origin, short); err != nil {
 		if err, ok := err.(*pq.Error); ok {
 			if err.Code == pgerrcode.UniqueViolation {
 				// take current link
-				dbd, _ := db.Instance()
 				var short string
-				_ = dbd.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
+				_ = s.db.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
 				return shortlink.Short(short), ErrAlreadyHasShort
 			}
 		}
@@ -154,14 +157,13 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 		}
 		buffer = append(buffer, t)
 	}
-	dbd, _ := db.Instance()
 	var shorts []shortlink.ShortURLs
 
 	// Delete old records for tests
-	_, _ = dbd.Exec("truncate table storage.short_links;")
+	_, _ = s.db.Exec("truncate table storage.short_links;")
 
 	// Start transaction
-	tx, err := dbd.Begin()
+	tx, err := s.db.Begin()
 	if err != nil {
 		return shorts, err
 	}

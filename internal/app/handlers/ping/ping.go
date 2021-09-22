@@ -10,7 +10,7 @@ import (
 type Handler struct{}
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	conn, err := db.Instance()
+	conn, err := db.New()
 	if err == nil {
 		if err := conn.PingContext(r.Context()); err == nil {
 			w.WriteHeader(http.StatusOK)

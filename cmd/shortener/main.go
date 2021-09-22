@@ -23,8 +23,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Db instance
+	dbh, _ := db.New()
 	// Allocation handler and storage
-	h, err := handlers.New()
+	h, err := handlers.New(dbh)
 	if err != nil {
 		l.Fatal("app error exit", zap.Error(err))
 	}
@@ -65,10 +67,9 @@ func main() {
 	}
 
 	// database close
-	conn, err := db.Instance()
-	if err == nil {
+	if dbh != nil {
 		l.Info("Closing connect to db")
-		err := conn.Close()
+		err := dbh.Close()
 		if err != nil {
 			l.Info("Closing don't close")
 		}
