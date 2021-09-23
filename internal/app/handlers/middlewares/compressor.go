@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"compress/gzip"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -27,6 +28,8 @@ func (h CompressorMw) GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if client send gzip format
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+
+			fmt.Println("YYY")
 			reader, err := gzip.NewReader(r.Body)
 			if err != nil {
 				h.l.Info("decompress error", zap.Error(err))

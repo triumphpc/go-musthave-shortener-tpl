@@ -53,6 +53,7 @@ func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
 		}
 		return &Handler{
 			s: s,
+			l: l,
 		}, nil
 	} else {
 		l.Info("Set file handler")
@@ -63,6 +64,7 @@ func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
 		}
 		return &Handler{
 			s: s,
+			l: l,
 		}, nil
 	}
 }
