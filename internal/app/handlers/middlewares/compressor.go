@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"compress/gzip"
+	"go.uber.org/zap"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -13,18 +13,29 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+type CompressorMw struct {
+	h http.Handler
+	l *zap.Logger
+}
+
+func NewCompressor(l *zap.Logger) *CompressorMw {
+	return &CompressorMw{l: l}
+}
+
 // GzipMiddleware compress and decompress zip data
-func GzipMiddleware(next http.Handler) http.Handler {
+func (h CompressorMw) GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if client send gzip format
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			reader, err := gzip.NewReader(r.Body)
 			if err != nil {
-				log.Println("decompress error", err)
+				h.l.Info("decompress error", zap.Error(err))
 				next.ServeHTTP(w, r)
 				return
 			}
-			defer reader.Close()
+			defer func(reader *gzip.Reader) {
+				_ = reader.Close()
+			}(reader)
 			r.Body = reader
 		}
 
@@ -37,12 +48,14 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		// Create gzip.Writer
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
-			log.Println("compress error", err)
+			h.l.Info("compress error", zap.Error(err))
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		defer gz.Close()
+		defer func(gz *gzip.Writer) {
+			_ = gz.Close()
+		}(gz)
 		w.Header().Set("Content-Encoding", "gzip")
 		// Prepare data
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)

@@ -19,19 +19,19 @@ import (
 
 func main() {
 	// Init logger
-	l, err := logger.Instance()
+	l, err := logger.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Db instance
-	dbh, _ := db.New()
+	dbh, _ := db.New(l)
 	// Allocation handler and storage
-	h, err := handlers.New(dbh)
+	h, err := handlers.New(dbh, l)
 	if err != nil {
 		l.Fatal("app error exit", zap.Error(err))
 	}
 	// Get routes
-	rtr := routes.Router(h)
+	rtr := routes.Router(h, l)
 	http.Handle("/", rtr)
 
 	// Context with cancel func
@@ -49,7 +49,10 @@ func main() {
 	srv := &http.Server{
 		Addr: serverAddress,
 		// Send request to conveyor
-		Handler: middlewares.Conveyor(rtr, middlewares.GzipMiddleware, middlewares.CookieMiddleware),
+		Handler: middlewares.Conveyor(
+			rtr, middlewares.NewCompressor(l).GzipMiddleware,
+			middlewares.NewMw(l).CookieMiddleware,
+		),
 	}
 	// Goroutine
 	go func() {

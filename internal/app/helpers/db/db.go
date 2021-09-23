@@ -4,14 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
+	"go.uber.org/zap"
 )
 
 // ErrDatabaseNotAvailable if db not determine
 var ErrDatabaseNotAvailable = errors.New("db not available")
 
 // New instance for db connection
-func New() (*sql.DB, error) {
+func New(l *zap.Logger) (*sql.DB, error) {
 	dsn, _ := configs.Instance().Param(configs.DatabaseDsn)
 	if dsn == "" {
 		return nil, ErrDatabaseNotAvailable
@@ -21,6 +21,6 @@ func New() (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Connect to database")
+	l.Info("Connect to database")
 	return inst, nil
 }

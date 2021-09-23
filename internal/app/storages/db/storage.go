@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	"go.uber.org/zap"
@@ -16,6 +15,7 @@ import (
 // PostgreSQLStorage storage
 type PostgreSQLStorage struct {
 	db *sql.DB
+	l  *zap.Logger
 }
 
 // ErrURLNotFound error by package level
@@ -76,13 +76,13 @@ const sqlSelectOriginAndShort = `
 select origin, short from storage.short_links where user_id=$1
 `
 
-// New Instance new Storage with not null fields
-func New(c *sql.DB) (*PostgreSQLStorage, error) {
+// New New new Storage with not null fields
+func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 	// Check if scheme exist
 	if _, err := c.ExecContext(context.Background(), scheme); err != nil {
 		return nil, err
 	}
-	return &PostgreSQLStorage{c}, nil
+	return &PostgreSQLStorage{c, l}, nil
 }
 
 // LinkByShort implement interface for get data from storage by userId and shortLink
@@ -147,7 +147,6 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 		Origin,
 		Short string
 	}
-
 	var buffer []temp
 	for _, v := range urls {
 		var t = temp{
@@ -158,10 +157,8 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 		buffer = append(buffer, t)
 	}
 	var shorts []shortlink.ShortURLs
-
 	// Delete old records for tests
 	_, _ = s.db.Exec("truncate table storage.short_links;")
-
 	// Start transaction
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -180,7 +177,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
 		if err != nil {
-			logger.Info("Close statement error", zap.Error(err))
+			s.l.Info("Close statement error", zap.Error(err))
 		}
 	}(stmt)
 
@@ -192,7 +189,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 				ID:    v.ID,
 			})
 		} else {
-			logger.Info("Save bunch error", zap.Error(err))
+			s.l.Info("Save bunch error", zap.Error(err))
 		}
 	}
 	// шаг 4 — сохраняем изменения

@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
@@ -40,14 +39,15 @@ type Repository interface {
 // Handler general type for handler
 type Handler struct {
 	s Repository
+	l *zap.Logger
 }
 
 // New Allocation new handler
-func New(c *sql.DB) (*Handler, error) {
+func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
 	// Check in db has
 	if c != nil {
-		logger.Info("Set db handler")
-		s, err := dbh.New(c)
+		l.Info("Set db handler")
+		s, err := dbh.New(c, l)
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +55,7 @@ func New(c *sql.DB) (*Handler, error) {
 			s: s,
 		}, nil
 	} else {
-		logger.Info("Set file handler")
+		l.Info("Set file handler")
 		// File and memory storage
 		s, err := file.New()
 		if err != nil {
@@ -150,7 +150,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	}{Result: slURL}
 
 	// log to stdout
-	logger.Info("save to json format", zap.Reflect("URL", result))
+	h.l.Info("save to json format", zap.Reflect("URL", result))
 	body, err = json.Marshal(result)
 	if err != nil {
 		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
@@ -236,7 +236,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	url, err := h.s.LinkByShort(shortlink.Short(id))
 	if err != nil {
-		logger.Info("Get error", zap.Error(err))
+		h.l.Info("Get error", zap.Error(err))
 		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
