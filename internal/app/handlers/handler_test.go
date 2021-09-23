@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,7 +14,7 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	h, err := New(nil)
+	h, err := New(nil, zap.NewNop())
 	if err != nil {
 		log.Fatal(err)
 	}
