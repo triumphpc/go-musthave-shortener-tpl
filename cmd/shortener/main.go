@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	_ "github.com/lib/pq"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
@@ -24,14 +25,19 @@ func main() {
 		log.Fatal(err)
 	}
 	// Db instance
-	dbh, _ := db.New(l)
+	dbh, err := db.New(l)
+	if errors.Is(err, db.ErrDatabaseNotAvailable) {
+		// Only log
+		l.Info("Db error", zap.Error(err))
+	}
+
 	// Allocation handler and storage
 	h, err := handlers.New(dbh, l)
 	if err != nil {
 		l.Fatal("app error exit", zap.Error(err))
 	}
 	// Get routes
-	rtr := routes.Router(h, l)
+	rtr := routes.Router(h, dbh, l)
 	http.Handle("/", rtr)
 
 	// Context with cancel func
