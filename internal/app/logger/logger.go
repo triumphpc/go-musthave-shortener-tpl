@@ -6,8 +6,13 @@ import (
 	"time"
 )
 
-// New create new logger
-func New(level string) (*zap.Logger, error) {
+// New Config instance
+func New() (*zap.Logger, error) {
+	return newLogger("info")
+}
+
+// new create new logger
+func newLogger(level string) (*zap.Logger, error) {
 	// Init config
 	cfg := zap.NewProductionConfig()
 	// Set level
@@ -25,6 +30,7 @@ func New(level string) (*zap.Logger, error) {
 	return cfg.Build()
 }
 
+// customMillisTimeEncoder set time format
 func customMillisTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000Z07"))
+	enc.AppendString(t.UTC().Format("2006-01-02 15:04:05"))
 }

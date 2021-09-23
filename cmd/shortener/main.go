@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
-	"github.com/gorilla/mux"
+	"errors"
+	_ "github.com/lib/pq"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
@@ -16,25 +20,27 @@ import (
 
 func main() {
 	// Init logger
-	l, err := logger.New("info")
+	l, err := logger.New()
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Db instance
+	dbh, err := db.New(l)
+	if errors.Is(err, db.ErrDatabaseNotAvailable) {
+		// Only log
+		l.Info("Db error", zap.Error(err))
+	}
+
 	// Allocation handler and storage
-	h, err := handlers.New(l)
+	h, err := handlers.New(dbh, l)
 	if err != nil {
 		l.Fatal("app error exit", zap.Error(err))
 	}
-
-	// Make Routes
-	rtr := mux.NewRouter()
-	rtr.HandleFunc("/api/shorten", h.SaveJSON)
-	rtr.HandleFunc("/{id:.+}", h.Get)
-	rtr.HandleFunc("/", h.Save)
-
+	// Get routes
+	rtr := routes.Router(h, dbh, l)
 	http.Handle("/", rtr)
 
-	// context with cancel func
+	// Context with cancel func
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
@@ -48,6 +54,11 @@ func main() {
 	// Init server
 	srv := &http.Server{
 		Addr: serverAddress,
+		// Send request to conveyor
+		Handler: middlewares.Conveyor(
+			rtr, middlewares.NewCompressor(l).GzipMiddleware,
+			middlewares.NewMw(l).CookieMiddleware,
+		),
 	}
 	// Goroutine
 	go func() {
@@ -62,6 +73,15 @@ func main() {
 		l.Info("Got SIGINT...")
 	case syscall.SIGTERM:
 		l.Info("Got SIGTERM...")
+	}
+
+	// database close
+	if dbh != nil {
+		l.Info("Closing connect to db")
+		err := dbh.Close()
+		if err != nil {
+			l.Info("Closing don't close")
+		}
 	}
 
 	l.Info("The service is shutting down...")

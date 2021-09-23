@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  go_service:
+    build:
+      context: .
+      dockerfile: dockerfiles/go_service.dockerfile
+    command: ./main
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgre_service
+#    environment:
+#      - DATABASE_DSN=postgres://postgres:qwerty@postgre_service:5436/postgres?sslmode=disable
+
+  postgre_service:
+    restart: always
+    image: postgres:latest
+    volumes:
+      - ./db/postgres/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=qwerty
+    ports:
+      - "5436:5432"

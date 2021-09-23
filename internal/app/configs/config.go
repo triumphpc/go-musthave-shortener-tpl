@@ -14,12 +14,14 @@ type Config struct {
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"unknown"`
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
 }
 
 const (
 	BaseURL                = "BASE_URL"
 	ServerAddress          = "SERVER_ADDRESS"
 	FileStoragePath        = "FILE_STORAGE_PATH"
+	DatabaseDsn            = "DATABASE_DSN"
 	FileStoragePathDefault = "unknown"
 )
 
@@ -28,6 +30,7 @@ var mapVarToInv = map[string]string{
 	BaseURL:         "b",
 	ServerAddress:   "a",
 	FileStoragePath: "f",
+	DatabaseDsn:     "d",
 }
 
 var instance *Config
@@ -46,20 +49,13 @@ func Instance() *Config {
 func (c *Config) Param(p string) (string, error) {
 	switch p {
 	case BaseURL:
-		if c.BaseURL != "" {
-			return c.BaseURL, nil
-		}
 		return c.BaseURL, nil
 	case ServerAddress:
-		if c.ServerAddress != "" {
-			return c.ServerAddress, nil
-		}
 		return c.ServerAddress, nil
 	case FileStoragePath:
-		if c.FileStoragePath != "" {
-			return c.FileStoragePath, nil
-		}
 		return c.FileStoragePath, nil
+	case DatabaseDsn:
+		return c.DatabaseDsn, nil
 	}
 	return "", ErrUnknownParam
 }
@@ -77,6 +73,7 @@ func (c *Config) init() {
 	bu := flag.String(mapVarToInv[BaseURL], "", "")
 	sa := flag.String(mapVarToInv[ServerAddress], "", "")
 	fs := flag.String(mapVarToInv[FileStoragePath], "", "")
+	db := flag.String(mapVarToInv[DatabaseDsn], "", "")
 	flag.Parse()
 
 	if *bu != "" {
@@ -87,5 +84,8 @@ func (c *Config) init() {
 	}
 	if *fs != "" {
 		c.FileStoragePath = *fs
+	}
+	if *db != "" {
+		c.DatabaseDsn = *db
 	}
 }
