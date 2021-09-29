@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"embed"
 	"errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
@@ -11,11 +10,9 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
+	"github.com/triumphpc/go-musthave-shortener-tpl/migrations"
 	"go.uber.org/zap"
 )
-
-//go:embed migrations/*.sql
-var embedMigrations embed.FS
 
 // PostgreSQLStorage storage
 type PostgreSQLStorage struct {
@@ -28,31 +25,6 @@ var ErrURLNotFound = errors.New("url not found")
 
 // ErrAlreadyHasShort if exist
 var ErrAlreadyHasShort = errors.New("already has short")
-
-// Scheme of database
-//const scheme = `
-//create schema if not exists storage;
-//create table if not exists storage.short_links
-//(
-//    id             serial       not null
-//        constraint short_links_pk
-//            primary key,
-//    user_id        varchar(50),
-//    origin         varchar(255) not null,
-//    short          varchar(50)  not null,
-//    correlation_id varchar(100)
-//);
-//comment on table storage.short_links is 'Short links from users';
-//comment on column storage.short_links.id is 'identifier of record';
-//comment on column storage.short_links.user_id is 'User identifier';
-//comment on column storage.short_links.origin is 'Origin link';
-//comment on column storage.short_links.short is 'Short link';
-//comment on column storage.short_links.correlation_id is 'Correlation identity';
-//alter table storage.short_links
-//    owner to postgres;
-//create unique index if not exists short_links_user_id_origin_uindex
-//    on storage.short_links (user_id, origin);
-//`
 
 // sqlNewRecord for new record in db
 const sqlNewRecord = `
@@ -84,14 +56,11 @@ select origin, short from storage.short_links where user_id=$1
 // New New new Storage with not null fields
 func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 	// Check if scheme exist
-	goose.SetBaseFS(embedMigrations)
-	if err := goose.Up(c, "migrations"); err != nil {
+	goose.SetBaseFS(migrations.EmbedMigrations)
+	if err := goose.Up(c, "."); err != nil {
 		panic(err)
 	}
 
-	//if _, err := c.ExecContext(context.Background(), scheme); err != nil {
-	//	return nil, err
-	//}
 	return &PostgreSQLStorage{c, l}, nil
 }
 
