@@ -31,21 +31,21 @@ services:
 
   # docker-compose up -d --build goose_exec_service - rebuild goose container
   # docker-compose run --rm goose_exec_service create link_storage sql - create new migrations
-#  goose_exec_service:
-#    build:
-#      context: .
-#      dockerfile: dockerfiles/goose_service_exec.dockerfile
-#    depends_on:
-#      - postgre_service
-#    environment:
-#      - DBHOST=postgre_service
-#      - DBNAME=postgres
-#      - DBUSER=postgres
-#      - DBPASSWORD=qwerty
-#      - DBSSL=disable
-#    volumes:
-#      - ./migrations:/migrations
-#    entrypoint: [ "bash", "entrypoint_exec.sh" ]
+  goose_exec_service:
+    build:
+      context: .
+      dockerfile: dockerfiles/goose_service_exec.dockerfile
+    depends_on:
+      - postgre_service
+    environment:
+      - DBHOST=postgre_service
+      - DBNAME=postgres
+      - DBUSER=postgres
+      - DBPASSWORD=qwerty
+      - DBSSL=disable
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: [ "bash", "entrypoint_exec.sh" ]
 
   postgre_service:
     restart: always

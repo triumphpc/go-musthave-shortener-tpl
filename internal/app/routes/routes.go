@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/delete"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/ping"
 	"go.uber.org/zap"
 	"net/http"
@@ -16,6 +17,8 @@ func Router(h *handlers.Handler, db *sql.DB, l *zap.Logger) *mux.Router {
 	rtr.HandleFunc("/api/shorten/batch", h.BunchSaveJSON).Methods(http.MethodPost)
 	// Save link from JSON format
 	rtr.HandleFunc("/api/shorten", h.SaveJSON).Methods(http.MethodPost)
+	// Delete links
+	rtr.Handle("/api/user/urls", delete.New(db, l)).Methods(http.MethodDelete)
 	// Get user session links in JSON
 	rtr.HandleFunc("/user/urls", h.GetUrls).Methods(http.MethodGet)
 	// Ping db connection

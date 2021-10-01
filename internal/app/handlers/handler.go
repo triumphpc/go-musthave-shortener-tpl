@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
+	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
@@ -16,12 +17,6 @@ import (
 	"io/ioutil"
 	"net/http"
 )
-
-// ErrBadResponse Package level error
-var ErrBadResponse = errors.New("bad request")
-var ErrUnknownURL = errors.New("unknown url")
-var ErrInternalError = errors.New("internal error")
-var ErrNoContent = errors.New("no content")
 
 // Repository interface for working with global repository
 // go:generate mockery --name=Repository --inpackage
@@ -44,41 +39,39 @@ type Handler struct {
 
 // New Allocation new handler
 func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
+	var s Repository
+	var err error
+
 	// Check in db has
 	if c != nil {
 		l.Info("Set db handler")
-		s, err := dbh.New(c, l)
-		if err != nil {
-			return nil, err
-		}
-		return &Handler{
-			s: s,
-			l: l,
-		}, nil
+		s, err = dbh.New(c, l)
 	} else {
 		l.Info("Set file handler")
 		// File and memory storage
-		s, err := file.New()
-		if err != nil {
-			return nil, err
-		}
-		return &Handler{
-			s: s,
-			l: l,
-		}, nil
+		s, err = file.New()
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Handler{
+		s: s,
+		l: l,
+	}, nil
 }
 
 // Save convert link to shorting and store in database
 func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	if r.Body == http.NoBody {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 
 	}
@@ -101,13 +94,13 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	slURL := fmt.Sprintf("%s/%s", baseURL, short)
 	_, err = w.Write([]byte(slURL))
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 	}
 }
 
@@ -115,7 +108,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	body, err := bodyFromJSON(&w, r)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
 	// Get url from json data
@@ -123,11 +116,11 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &url)
 
 	if err != nil {
-		http.Error(w, ErrUnknownURL.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
 	if url.URL == "" {
-		http.Error(w, ErrUnknownURL.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
 	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
@@ -143,7 +136,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	slURL := fmt.Sprintf("%s/%s", baseURL, string(short))
@@ -155,7 +148,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	h.l.Info("save to json format", zap.Reflect("URL", result))
 	body, err = json.Marshal(result)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
 	// Prepare response
@@ -163,7 +156,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(status)
 	_, err = w.Write(body)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 	}
 }
 
@@ -171,25 +164,25 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	body, err := bodyFromJSON(&w, r)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
 	// Get url from json data
 	var urls []shortlink.URLs
 	err = json.Unmarshal(body, &urls)
 	if err != nil {
-		http.Error(w, ErrUnknownURL.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
 	shorts, err := h.s.BunchSave(urls)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
 	// Determine base url
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	// Prepare results
@@ -198,7 +191,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err = json.Marshal(shorts)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 
 	}
@@ -207,7 +200,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	_, err = w.Write(body)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 	}
 }
 
@@ -215,13 +208,13 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 func bodyFromJSON(w *http.ResponseWriter, r *http.Request) ([]byte, error) {
 	var body []byte
 	if r.Body == http.NoBody {
-		http.Error(*w, ErrBadResponse.Error(), http.StatusBadRequest)
-		return body, ErrBadResponse
+		http.Error(*w, er.ErrBadResponse.Error(), http.StatusBadRequest)
+		return body, er.ErrBadResponse
 	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(*w, ErrUnknownURL.Error(), http.StatusBadRequest)
-		return body, ErrUnknownURL
+		http.Error(*w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
+		return body, er.ErrUnknownURL
 	}
 	return body, nil
 }
@@ -233,13 +226,13 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	id := params["id"]
 
 	if id == "" {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	url, err := h.s.LinkByShort(shortlink.Short(id))
 	if err != nil {
 		h.l.Info("Get error", zap.Error(err))
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
@@ -252,7 +245,7 @@ func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 	userID := userIDCtx.(string)
 	links, err := h.s.LinksByUser(user.UniqUser(userID))
 	if err != nil {
-		http.Error(w, ErrNoContent.Error(), http.StatusNoContent)
+		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)
 		return
 	}
 
@@ -272,7 +265,7 @@ func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := json.Marshal(lks)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	// Prepare response
@@ -280,6 +273,6 @@ func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(body)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 	}
 }

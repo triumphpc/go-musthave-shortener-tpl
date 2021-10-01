@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
@@ -21,6 +22,12 @@ func New(l *zap.Logger) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Ping
+	if err := inst.PingContext(context.Background()); err != nil {
+		return nil, err
+	}
+
 	l.Info("Connect to database")
 	return inst, nil
 }

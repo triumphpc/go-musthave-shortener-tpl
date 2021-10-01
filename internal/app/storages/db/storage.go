@@ -31,9 +31,9 @@ const sqlNewRecord = `
 insert into storage.short_links (id, user_id, origin, short) 
 values (default, $1, $2, $3)
 `
-const sqlGetCurrentRecord = `
-select short from storage.short_links where user_id=$1 and origin=$2
-`
+
+// sqlGetCurrentRecord for get current record
+const sqlGetCurrentRecord = "select short from storage.short_links where user_id=$1 and origin=$2;"
 
 // sqlBunchNewRecord for new record in db
 const sqlBunchNewRecord = `
@@ -48,7 +48,7 @@ const sqlSelectOrigin = `
 select origin from storage.short_links where short=$1
 `
 
-// sqlSelectOriginAndShort select origin and short
+// SqlSelectOriginAndShort select origin and short
 const sqlSelectOriginAndShort = `
 select origin, short from storage.short_links where user_id=$1
 `
@@ -60,7 +60,6 @@ func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 	if err := goose.Up(c, "."); err != nil {
 		panic(err)
 	}
-
 	return &PostgreSQLStorage{c, l}, nil
 }
 
@@ -171,7 +170,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 			s.l.Info("Save bunch error", zap.Error(err))
 		}
 	}
-	// шаг 4 — сохраняем изменения
+	// Save changes
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
