@@ -21,7 +21,11 @@ func Router(h *handlers.Handler, db *sql.DB, l *zap.Logger) *mux.Router {
 		cookieMw.CookieMiddleware(http.HandlerFunc(h.BunchSaveJSON)),
 	).Methods(http.MethodPost)
 	// Save link from JSON format session
-	rtr.HandleFunc("/api/shorten", h.SaveJSON).Methods(http.MethodPost)
+	//rtr.HandleFunc("/api/shorten", h.SaveJSON).Methods(http.MethodPost)
+	rtr.Handle(
+		"/api/shorten",
+		cookieMw.CookieMiddleware(http.HandlerFunc(h.SaveJSON)),
+	).Methods(http.MethodDelete)
 	// Delete links session
 	rtr.Handle(
 		"/api/user/urls",
