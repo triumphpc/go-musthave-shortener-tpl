@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -120,6 +121,9 @@ func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink
 
 // BunchSave save mass urls
 func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs, userID user.UniqUser) ([]shortlink.ShortURLs, error) {
+	fmt.Println("BunchSave")
+	fmt.Println(userID)
+
 	// Generate shorts
 	type temp struct {
 		ID,

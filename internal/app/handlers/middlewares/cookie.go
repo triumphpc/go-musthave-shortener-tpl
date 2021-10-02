@@ -46,7 +46,7 @@ func (h CookieMw) CookieMiddleware(next http.Handler) http.Handler {
 			h.l.Info("Encode cookie error", zap.Error(err))
 		}
 
-		fmt.Println("FROM COOKIE")
+		fmt.Println("COOKIE")
 		fmt.Println(userID)
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), consts.UserIDCtxName, userID)))
 	})
