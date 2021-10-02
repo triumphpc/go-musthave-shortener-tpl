@@ -16,7 +16,7 @@ type CookieMw struct {
 	l *zap.Logger
 }
 
-func NewMw(l *zap.Logger) *CookieMw {
+func New(l *zap.Logger) *CookieMw {
 	return &CookieMw{l: l}
 }
 

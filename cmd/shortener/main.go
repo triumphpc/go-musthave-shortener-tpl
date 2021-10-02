@@ -54,10 +54,10 @@ func main() {
 	// Init server
 	srv := &http.Server{
 		Addr: serverAddress,
-		// Send request to conveyor
+		// Send request to conveyor example
 		Handler: middlewares.Conveyor(
 			rtr, middlewares.NewCompressor(l).GzipMiddleware,
-			middlewares.NewMw(l).CookieMiddleware,
+			//middlewares.New(l).CookieMiddleware,
 		),
 	}
 	// Goroutine
