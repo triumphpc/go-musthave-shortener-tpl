@@ -27,6 +27,3 @@ create unique index if not exists short_links_user_id_origin_uindex
 -- SQL in this section is executed when the migration is rolled back.
 drop table storage.short_links;
 drop schema storage;
-
-
-

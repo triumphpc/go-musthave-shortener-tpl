@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
@@ -22,11 +23,11 @@ import (
 // go:generate mockery --name=Repository --inpackage
 type Repository interface {
 	// LinkByShort get original link from all storage
-	LinkByShort(short shortlink.Short, userID user.UniqUser) (string, error)
+	LinkByShort(short shortlink.Short) (string, error)
 	// Save link to repository
 	Save(userID user.UniqUser, url string) (shortlink.Short, error)
 	// BunchSave save mass urls and generate shorts
-	BunchSave(urls []shortlink.URLs, userID user.UniqUser) ([]shortlink.ShortURLs, error)
+	BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
 	// LinksByUser return all user links
 	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
 }
@@ -76,7 +77,16 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	}
 	origin := string(body)
-	short, err := h.s.Save(helpers.GetContextUserID(r), origin)
+	// todo
+	// Get userID from context
+	userIDCtx := r.Context().Value("ctxUserId")
+	userID := "default"
+	if userIDCtx != nil {
+		// Convert interface type to user.UniqUser
+		userID = userIDCtx.(string)
+	}
+
+	short, err := h.s.Save(user.UniqUser(userID), origin)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
@@ -117,7 +127,15 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
+	// todo
+	userIDCtx := r.Context().Value(consts.UserIDCtxName)
+	userID := "default"
+	if userIDCtx != nil {
+		// Convert interface type to user.UniqUser
+		userID = userIDCtx.(string)
+	}
+
+	short, err := h.s.Save(user.UniqUser(userID), url.URL)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
@@ -162,7 +180,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	shorts, err := h.s.BunchSave(urls, helpers.GetContextUserID(r))
+	shorts, err := h.s.BunchSave(urls)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
@@ -202,7 +220,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
-	url, err := h.s.LinkByShort(shortlink.Short(id), helpers.GetContextUserID(r))
+	url, err := h.s.LinkByShort(shortlink.Short(id))
 	if err != nil {
 		h.l.Info("Get error", zap.Error(err))
 		if errors.Is(err, er.ErrURLIsGone) {
@@ -218,7 +236,11 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
-	links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
+	// todo
+	userIDCtx := r.Context().Value(consts.UserIDCtxName)
+	// Convert interface type to user.UniqUser
+	userID := userIDCtx.(string)
+	links, err := h.s.LinksByUser(user.UniqUser(userID))
 	if err != nil {
 		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)
 		return

@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -38,9 +37,13 @@ on conflict (user_id, origin)
 do nothing;
 `
 
+// todo
 // sqlSelectFromOrigin select origin
+//const sqlSelectOrigin = `
+//select origin, is_deleted from storage.short_links where short=$1 and user_id=$2
+//`
 const sqlSelectOrigin = `
-select origin, is_deleted from storage.short_links where short=$1 and user_id=$2
+select origin, is_deleted from storage.short_links where short=$1
 `
 
 // SqlSelectOriginAndShort select origin and short
@@ -59,11 +62,11 @@ func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 }
 
 // LinkByShort implement interface for get data from storage by userId and shortLink
-func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short, userID user.UniqUser) (string, error) {
+func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
 	var origin string
 	var gone bool
 
-	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short), userID).Scan(&origin, &gone)
+	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin, &gone)
 
 	if err != nil {
 		return "", er.ErrURLNotFound
@@ -120,10 +123,7 @@ func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink
 }
 
 // BunchSave save mass urls
-func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs, userID user.UniqUser) ([]shortlink.ShortURLs, error) {
-	fmt.Println("BunchSave")
-	fmt.Println(userID)
-
+func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
 	// Generate shorts
 	type temp struct {
 		ID,
@@ -166,7 +166,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs, userID user.UniqUse
 
 	for _, v := range buffer {
 		// Add record to transaction
-		if _, err = stmt.ExecContext(context.Background(), userID, v.Origin, v.Short, v.ID); err != nil {
+		if _, err = stmt.ExecContext(context.Background(), "all", v.Origin, v.Short, v.ID); err != nil {
 			return nil, err
 		}
 		// Add to short
