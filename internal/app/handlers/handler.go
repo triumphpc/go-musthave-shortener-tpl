@@ -93,7 +93,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	short, err := h.s.Save(user.UniqUser(userID), origin)
 	status := http.StatusCreated
-	if errors.Is(err, er.ErrAlreadyHasShort) {
+	if errors.Is(err, dbh.ErrAlreadyHasShort) {
 		status = http.StatusConflict
 	}
 	// Prepare response
