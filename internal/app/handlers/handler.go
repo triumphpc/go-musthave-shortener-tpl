@@ -163,7 +163,8 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	shorts, err := h.s.BunchSave(urls, helpers.GetContextUserID(r))
+	//shorts, err := h.s.BunchSave(urls, helpers.GetContextUserID(r))
+	shorts, err := h.s.BunchSave(urls, "all")
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
