@@ -165,7 +165,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs, userID user.UniqUse
 		if _, err = stmt.ExecContext(context.Background(), userID, v.Origin, v.Short, v.ID); err != nil {
 			return nil, err
 		}
-		// Add to st
+		// Add to short
 		shorts = append(shorts, shortlink.ShortURLs{
 			Short: v.Short,
 			ID:    v.ID,
