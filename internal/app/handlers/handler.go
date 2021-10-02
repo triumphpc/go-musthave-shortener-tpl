@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
@@ -18,9 +17,6 @@ import (
 	"io/ioutil"
 	"net/http"
 )
-
-// ErrBadResponse Package level error
-var ErrBadResponse = errors.New("bad request")
 
 // Repository interface for working with global repository
 // go:generate mockery --name=Repository --inpackage
@@ -82,16 +78,8 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	}
 	origin := string(body)
-	// todo
-	// Get userID from context
-	userIDCtx := r.Context().Value(consts.UserIDCtxName)
-	userID := "default"
-	if userIDCtx != nil {
-		// Convert interface type to user.UniqUser
-		userID = userIDCtx.(string)
-	}
 
-	short, err := h.s.Save(user.UniqUser(userID), origin)
+	short, err := h.s.Save(helpers.GetContextUserID(r), origin)
 	status := http.StatusCreated
 	if errors.Is(err, dbh.ErrAlreadyHasShort) {
 		status = http.StatusConflict
@@ -132,15 +120,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// todo
-	userIDCtx := r.Context().Value(consts.UserIDCtxName)
-	userID := "default"
-	if userIDCtx != nil {
-		// Convert interface type to user.UniqUser
-		userID = userIDCtx.(string)
-	}
-
-	short, err := h.s.Save(user.UniqUser(userID), url.URL)
+	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
 	status := http.StatusCreated
 	if errors.Is(err, dbh.ErrAlreadyHasShort) {
 		status = http.StatusConflict
@@ -228,7 +208,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	url, err := h.s.LinkByShort(shortlink.Short(id))
 	if err != nil {
 		h.l.Info("Get error", zap.Error(err))
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
@@ -236,11 +216,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
-	// todo
-	userIDCtx := r.Context().Value(consts.UserIDCtxName)
-	// Convert interface type to user.UniqUser
-	userID := userIDCtx.(string)
-	links, err := h.s.LinksByUser(user.UniqUser(userID))
+	links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
 	if err != nil {
 		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)
 		return
