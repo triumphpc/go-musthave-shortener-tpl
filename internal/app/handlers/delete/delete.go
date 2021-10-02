@@ -18,11 +18,11 @@ type Handler struct {
 	db      *sql.DB
 	l       *zap.Logger
 	InputCh chan string
-	userId  user.UniqUser
+	userID  user.UniqUser
 }
 
 func New(db *sql.DB, l *zap.Logger) *Handler {
-	return &Handler{db, l, nil, "all"}
+	return &Handler{db, l, nil, ""}
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +45,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set user id
-	h.userId = helpers.GetContextUserID(r)
+	h.userID = helpers.GetContextUserID(r)
 
 	h.InputCh = make(chan string)
 	// Put in channel all ids
@@ -150,7 +150,7 @@ AND (correlation_id = ANY($2) OR short=ANY($3))
 
 	// Update in transaction
 	ids := pq.Array(correlationIds)
-	if _, err = stmt.ExecContext(ctx, h.userId, ids, ids); err != nil {
+	if _, err = stmt.ExecContext(ctx, h.userID, ids, ids); err != nil {
 		return err
 	}
 
