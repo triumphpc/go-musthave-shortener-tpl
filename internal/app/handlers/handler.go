@@ -76,7 +76,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	}
 	origin := string(body)
-	short, err := h.s.Save("all", origin)
+	short, err := h.s.Save(helpers.GetContextUserID(r), origin)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
@@ -202,7 +202,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
-	url, err := h.s.LinkByShort(shortlink.Short(id), "all")
+	url, err := h.s.LinkByShort(shortlink.Short(id), helpers.GetContextUserID(r))
 	if err != nil {
 		h.l.Info("Get error", zap.Error(err))
 		if errors.Is(err, er.ErrURLIsGone) {
