@@ -9,6 +9,7 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
@@ -20,7 +21,6 @@ import (
 
 // ErrBadResponse Package level error
 var ErrBadResponse = errors.New("bad request")
-var ErrUnknownURL = errors.New("unknown url")
 
 // Repository interface for working with global repository
 // go:generate mockery --name=Repository --inpackage
@@ -114,7 +114,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 // SaveJSON convert link to shorting and store in database
 func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
-	body, err := bodyFromJSON(&w, r)
+	body, err := helpers.BodyFromJSON(&w, r)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
@@ -131,6 +131,8 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// todo
 	userIDCtx := r.Context().Value(consts.UserIDCtxName)
 	userID := "default"
 	if userIDCtx != nil {
@@ -171,7 +173,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 
 // BunchSaveJSON save data and return from mass
 func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
-	body, err := bodyFromJSON(&w, r)
+	body, err := helpers.BodyFromJSON(&w, r)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
@@ -213,21 +215,6 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// bodyFromJSON get bytes from JSON requests
-func bodyFromJSON(w *http.ResponseWriter, r *http.Request) ([]byte, error) {
-	var body []byte
-	if r.Body == http.NoBody {
-		http.Error(*w, ErrBadResponse.Error(), http.StatusBadRequest)
-		return body, ErrBadResponse
-	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(*w, ErrUnknownURL.Error(), http.StatusBadRequest)
-		return body, ErrUnknownURL
-	}
-	return body, nil
-}
-
 // Get fid origin link from storage
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	// Validation id params
@@ -249,6 +236,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
+	// todo
 	userIDCtx := r.Context().Value(consts.UserIDCtxName)
 	// Convert interface type to user.UniqUser
 	userID := userIDCtx.(string)
