@@ -26,7 +26,7 @@ type Repository interface {
 	// Save link to repository
 	Save(userID user.UniqUser, url string) (shortlink.Short, error)
 	// BunchSave save mass urls and generate shorts
-	BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
+	BunchSave(userID user.UniqUser, urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
 	// LinksByUser return all user links
 	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
 }
@@ -163,7 +163,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	shorts, err := h.s.BunchSave(urls)
+	shorts, err := h.s.BunchSave(helpers.GetContextUserID(r), urls)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return

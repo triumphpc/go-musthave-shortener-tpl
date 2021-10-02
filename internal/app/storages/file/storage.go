@@ -86,7 +86,7 @@ func (s *UserStorage) Load() error {
 }
 
 // BunchSave save mass urls
-func (s *UserStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
+func (s *UserStorage) BunchSave(userID user.UniqUser, urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
 	var shorts []shortlink.ShortURLs
 	return shorts, nil
 }

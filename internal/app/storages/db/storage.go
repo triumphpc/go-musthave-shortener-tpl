@@ -112,7 +112,7 @@ func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink
 }
 
 // BunchSave save mass urls
-func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
+func (s *PostgreSQLStorage) BunchSave(userID user.UniqUser, urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
 	// Generate shorts
 	type temp struct {
 		ID,
@@ -155,7 +155,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 
 	for _, v := range buffer {
 		// Add record to transaction
-		if _, err = stmt.ExecContext(context.Background(), "all", v.Origin, v.Short, v.ID); err == nil {
+		if _, err = stmt.ExecContext(context.Background(), userID, v.Origin, v.Short, v.ID); err == nil {
 			shorts = append(shorts, shortlink.ShortURLs{
 				Short: v.Short,
 				ID:    v.ID,
