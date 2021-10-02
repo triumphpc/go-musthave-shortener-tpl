@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/ping"
 	"go.uber.org/zap"
 	"net/http"
@@ -12,12 +13,29 @@ import (
 // Router define routes priority
 func Router(h *handlers.Handler, db *sql.DB, l *zap.Logger) *mux.Router {
 	rtr := mux.NewRouter()
+	cookieMw := middlewares.New(l)
+
 	// Mass save short links
-	rtr.HandleFunc("/api/shorten/batch", h.BunchSaveJSON).Methods(http.MethodPost)
+	//rtr.HandleFunc("/api/shorten/batch", h.BunchSaveJSON).Methods(http.MethodPost)
+	rtr.Handle(
+		"/api/shorten/batch",
+		cookieMw.CookieMiddleware(http.HandlerFunc(h.BunchSaveJSON)),
+	).Methods(http.MethodPost)
+
 	// Save link from JSON format
-	rtr.HandleFunc("/api/shorten", h.SaveJSON).Methods(http.MethodPost)
+	//rtr.HandleFunc("/api/shorten", h.SaveJSON).Methods(http.MethodPost)
+	rtr.Handle(
+		"/api/shorten",
+		cookieMw.CookieMiddleware(http.HandlerFunc(h.SaveJSON)),
+	).Methods(http.MethodPost)
+
 	// Get user session links in JSON
-	rtr.HandleFunc("/user/urls", h.GetUrls).Methods(http.MethodGet)
+	//rtr.HandleFunc("/user/urls", h.GetUrls).Methods(http.MethodGet)
+	rtr.Handle(
+		"/user/urls",
+		cookieMw.CookieMiddleware(http.HandlerFunc(h.GetUrls)),
+	).Methods(http.MethodGet)
+
 	// Ping db connection
 	rtr.Handle("/ping", ping.New(db, l))
 	// Get origin by short link
