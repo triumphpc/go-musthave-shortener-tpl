@@ -4,7 +4,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -121,4 +123,15 @@ func BodyFromJSON(w *http.ResponseWriter, r *http.Request) ([]byte, error) {
 		return body, er.ErrUnknownURL
 	}
 	return body, nil
+}
+
+// GetContextUserID return uniq user id from session
+func GetContextUserID(r *http.Request) user.UniqUser {
+	userIDCtx := r.Context().Value(consts.UserIDCtxName)
+	userID := "all"
+	if userIDCtx != nil {
+		// Convert interface type to user.UniqUser
+		userID = userIDCtx.(string)
+	}
+	return user.UniqUser(userID)
 }

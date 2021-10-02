@@ -3,10 +3,10 @@ package db
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
+	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
@@ -19,12 +19,6 @@ type PostgreSQLStorage struct {
 	db *sql.DB
 	l  *zap.Logger
 }
-
-// ErrURLNotFound error by package level
-var ErrURLNotFound = errors.New("url not found")
-
-// ErrAlreadyHasShort if exist
-var ErrAlreadyHasShort = errors.New("already has short")
 
 // sqlNewRecord for new record in db
 const sqlNewRecord = `
@@ -45,7 +39,7 @@ do nothing;
 
 // sqlSelectFromOrigin select origin
 const sqlSelectOrigin = `
-select origin from storage.short_links where short=$1
+select origin, is_deleted from storage.short_links where short=$1 and user_id=$2
 `
 
 // SqlSelectOriginAndShort select origin and short
@@ -64,13 +58,20 @@ func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 }
 
 // LinkByShort implement interface for get data from storage by userId and shortLink
-func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
+func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short, userID user.UniqUser) (string, error) {
 	var origin string
-	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin)
+	var gone bool
+
+	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short), userID).Scan(&origin, &gone)
 
 	if err != nil {
-		return "", ErrURLNotFound
+		return "", er.ErrURLNotFound
 	}
+
+	if gone {
+		return "", er.ErrURLIsGone
+	}
+
 	return origin, nil
 }
 
@@ -109,7 +110,7 @@ func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink
 				// take current link
 				var short string
 				_ = s.db.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
-				return shortlink.Short(short), ErrAlreadyHasShort
+				return shortlink.Short(short), er.ErrAlreadyHasShort
 			}
 		}
 		return short, err
@@ -118,7 +119,7 @@ func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink
 }
 
 // BunchSave save mass urls
-func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
+func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs, userID user.UniqUser) ([]shortlink.ShortURLs, error) {
 	// Generate shorts
 	type temp struct {
 		ID,
@@ -161,14 +162,14 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 
 	for _, v := range buffer {
 		// Add record to transaction
-		if _, err = stmt.ExecContext(context.Background(), "all", v.Origin, v.Short, v.ID); err == nil {
-			shorts = append(shorts, shortlink.ShortURLs{
-				Short: v.Short,
-				ID:    v.ID,
-			})
-		} else {
-			s.l.Info("Save bunch error", zap.Error(err))
+		if _, err = stmt.ExecContext(context.Background(), userID, v.Origin, v.Short, v.ID); err != nil {
+			return nil, err
 		}
+		// Add to st
+		shorts = append(shorts, shortlink.ShortURLs{
+			Short: v.Short,
+			ID:    v.ID,
+		})
 	}
 	// Save changes
 	err = tx.Commit()

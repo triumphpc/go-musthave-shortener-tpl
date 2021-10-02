@@ -30,8 +30,8 @@ func New() (*UserStorage, error) {
 }
 
 // LinkByShort implement interface for get data from storage by userId and shortLink
-func (s *UserStorage) LinkByShort(short shortlink.Short) (string, error) {
-	shorts, ok := s.data["all"]
+func (s *UserStorage) LinkByShort(short shortlink.Short, userID user.UniqUser) (string, error) {
+	shorts, ok := s.data[userID]
 	if !ok {
 		return "", ErrURLNotFound
 	}
@@ -86,7 +86,7 @@ func (s *UserStorage) Load() error {
 }
 
 // BunchSave save mass urls
-func (s *UserStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
+func (s *UserStorage) BunchSave(urls []shortlink.URLs, userID user.UniqUser) ([]shortlink.ShortURLs, error) {
 	var shorts []shortlink.ShortURLs
 	return shorts, nil
 }

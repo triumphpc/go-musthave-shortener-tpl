@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
@@ -22,11 +22,11 @@ import (
 // go:generate mockery --name=Repository --inpackage
 type Repository interface {
 	// LinkByShort get original link from all storage
-	LinkByShort(short shortlink.Short) (string, error)
+	LinkByShort(short shortlink.Short, userID user.UniqUser) (string, error)
 	// Save link to repository
 	Save(userID user.UniqUser, url string) (shortlink.Short, error)
 	// BunchSave save mass urls and generate shorts
-	BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
+	BunchSave(urls []shortlink.URLs, userID user.UniqUser) ([]shortlink.ShortURLs, error)
 	// LinksByUser return all user links
 	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
 }
@@ -76,16 +76,9 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	}
 	origin := string(body)
-	// Get userID from context
-	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-	userID := "default"
-	if userIDCtx != nil {
-		// Convert interface type to user.UniqUser
-		userID = userIDCtx.(string)
-	}
-	short, err := h.s.Save(user.UniqUser(userID), origin)
+	short, err := h.s.Save(helpers.GetContextUserID(r), origin)
 	status := http.StatusCreated
-	if errors.Is(err, dbh.ErrAlreadyHasShort) {
+	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
 	}
 	// Prepare response
@@ -106,7 +99,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 // SaveJSON convert link to shorting and store in database
 func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
-	body, err := bodyFromJSON(&w, r)
+	body, err := helpers.BodyFromJSON(&w, r)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
@@ -123,15 +116,10 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-	userID := "default"
-	if userIDCtx != nil {
-		// Convert interface type to user.UniqUser
-		userID = userIDCtx.(string)
-	}
-	short, err := h.s.Save(user.UniqUser(userID), url.URL)
+
+	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
 	status := http.StatusCreated
-	if errors.Is(err, dbh.ErrAlreadyHasShort) {
+	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
 	}
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
@@ -162,7 +150,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 
 // BunchSaveJSON save data and return from mass
 func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
-	body, err := bodyFromJSON(&w, r)
+	body, err := helpers.BodyFromJSON(&w, r)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
@@ -174,7 +162,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	shorts, err := h.s.BunchSave(urls)
+	shorts, err := h.s.BunchSave(urls, helpers.GetContextUserID(r))
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
@@ -204,21 +192,6 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// bodyFromJSON get bytes from JSON requests
-func bodyFromJSON(w *http.ResponseWriter, r *http.Request) ([]byte, error) {
-	var body []byte
-	if r.Body == http.NoBody {
-		http.Error(*w, er.ErrBadResponse.Error(), http.StatusBadRequest)
-		return body, er.ErrBadResponse
-	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(*w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
-		return body, er.ErrUnknownURL
-	}
-	return body, nil
-}
-
 // Get fid origin link from storage
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	// Validation id params
@@ -229,9 +202,14 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
-	url, err := h.s.LinkByShort(shortlink.Short(id))
+	url, err := h.s.LinkByShort(shortlink.Short(id), helpers.GetContextUserID(r))
 	if err != nil {
 		h.l.Info("Get error", zap.Error(err))
+		if errors.Is(err, er.ErrURLIsGone) {
+			http.Error(w, er.ErrURLIsGone.Error(), http.StatusGone)
+			return
+		}
+
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
@@ -240,10 +218,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
-	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-	// Convert interface type to user.UniqUser
-	userID := userIDCtx.(string)
-	links, err := h.s.LinksByUser(user.UniqUser(userID))
+	links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
 	if err != nil {
 		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)
 		return

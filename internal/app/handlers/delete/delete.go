@@ -5,24 +5,24 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/lib/pq"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	"go.uber.org/zap"
 	"net/http"
 	"sync"
 )
 
-// workerCount count of worker for flow saving
-const workerCount = 10
-
 type Handler struct {
 	db      *sql.DB
 	l       *zap.Logger
 	InputCh chan string
+	userId  user.UniqUser
 }
 
 func New(db *sql.DB, l *zap.Logger) *Handler {
-	return &Handler{db, l, nil}
+	return &Handler{db, l, nil, "all"}
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +43,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Set user id
+	h.userId = helpers.GetContextUserID(r)
 
 	h.InputCh = make(chan string)
 	// Put in channel all ids
@@ -124,8 +127,14 @@ func (h Handler) bunchUpdateAsDeleted(ctx context.Context, correlationIds []stri
 	defer func(tx *sql.Tx) {
 		_ = tx.Rollback()
 	}(tx)
+
 	// Prepare statement
-	query := "update storage.short_links set is_deleted=true where correlation_id = ANY($1)"
+	query := `
+UPDATE storage.short_links 
+SET is_deleted=true 
+WHERE user_id=$1
+AND (correlation_id = ANY($2) OR short=ANY($3))
+`
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -140,7 +149,8 @@ func (h Handler) bunchUpdateAsDeleted(ctx context.Context, correlationIds []stri
 	}(stmt)
 
 	// Update in transaction
-	if _, err = stmt.ExecContext(ctx, pq.Array(correlationIds)); err != nil {
+	ids := pq.Array(correlationIds)
+	if _, err = stmt.ExecContext(ctx, h.userId, ids, ids); err != nil {
 		return err
 	}
 
@@ -155,8 +165,8 @@ func (h Handler) bunchUpdateAsDeleted(ctx context.Context, correlationIds []stri
 // FanOut flow of ids
 func (h Handler) fanOut() []chan string {
 	// create stacks of chains
-	cs := make([]chan string, 0, workerCount)
-	for i := 0; i < workerCount; i++ {
+	cs := make([]chan string, 0, consts.WorkerCount)
+	for i := 0; i < consts.WorkerCount; i++ {
 		cs = append(cs, make(chan string))
 	}
 	// goroutines for channel stack distribution

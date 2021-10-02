@@ -14,3 +14,12 @@ var ErrInternalError = errors.New("internal error")
 
 // ErrNoContent no records in database
 var ErrNoContent = errors.New("no content")
+
+// ErrURLNotFound error by package level
+var ErrURLNotFound = errors.New("url not found")
+
+// ErrAlreadyHasShort if exist
+var ErrAlreadyHasShort = errors.New("already has short")
+
+// ErrURLIsGone in storage
+var ErrURLIsGone = errors.New("url is gone")
