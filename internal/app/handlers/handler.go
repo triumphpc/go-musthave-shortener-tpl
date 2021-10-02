@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
@@ -84,7 +84,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	origin := string(body)
 	// todo
 	// Get userID from context
-	userIDCtx := r.Context().Value(consts.UserIDCtxName)
+	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
 	userID := "default"
 	if userIDCtx != nil {
 		// Convert interface type to user.UniqUser
@@ -131,8 +131,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	// todo
-	userIDCtx := r.Context().Value(consts.UserIDCtxName)
+	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
 	userID := "default"
 	if userIDCtx != nil {
 		// Convert interface type to user.UniqUser
@@ -250,8 +249,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
-	// todo
-	userIDCtx := r.Context().Value(consts.UserIDCtxName)
+	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
 	// Convert interface type to user.UniqUser
 	userID := userIDCtx.(string)
 	links, err := h.s.LinksByUser(user.UniqUser(userID))
