@@ -140,7 +140,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 
 	short, err := h.s.Save(user.UniqUser(userID), url.URL)
 	status := http.StatusCreated
-	if errors.Is(err, er.ErrAlreadyHasShort) {
+	if errors.Is(err, dbh.ErrAlreadyHasShort) {
 		status = http.StatusConflict
 	}
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
