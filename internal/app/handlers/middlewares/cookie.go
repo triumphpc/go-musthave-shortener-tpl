@@ -4,6 +4,7 @@ package middlewares
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
@@ -44,6 +45,9 @@ func (h CookieMw) CookieMiddleware(next http.Handler) http.Handler {
 		} else {
 			h.l.Info("Encode cookie error", zap.Error(err))
 		}
+
+		fmt.Println("FROM COOKIE")
+		fmt.Println(userID)
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), consts.UserIDCtxName, userID)))
 	})
 }

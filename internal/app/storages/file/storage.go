@@ -33,7 +33,11 @@ func New() (*UserStorage, error) {
 func (s *UserStorage) LinkByShort(short shortlink.Short, userID user.UniqUser) (string, error) {
 	shorts, ok := s.data[userID]
 	if !ok {
-		return "", ErrURLNotFound
+		// find in all
+		shorts, ok = s.data["all"]
+		if !ok {
+			return "", ErrURLNotFound
+		}
 	}
 	url, ok := shorts[short]
 	if !ok {
@@ -62,6 +66,7 @@ func (s *UserStorage) Save(userID user.UniqUser, url string) (shortlink.Short, e
 	currentUrls[short] = url
 	// Save in map storage or rewrite current
 	s.data[userID] = currentUrls
+	s.data["all"] = currentUrls
 	// Save to file storage
 	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	if err != nil || fs == configs.FileStoragePathDefault {

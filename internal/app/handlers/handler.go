@@ -122,9 +122,6 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
 	}
-	// save for all (for github tests)
-	_, _ = h.s.Save("all", url.URL)
-
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
