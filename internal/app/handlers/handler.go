@@ -117,8 +117,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
-	short, err := h.s.Save("all", url.URL)
+	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
@@ -163,7 +162,6 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	//shorts, err := h.s.BunchSave(urls, helpers.GetContextUserID(r))
 	shorts, err := h.s.BunchSave(urls, "all")
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
@@ -220,8 +218,10 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
-	//links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
-	links, err := h.s.LinksByUser("all")
+	userIDCtx := r.Context().Value("ctxUserId")
+	// Convert interface type to user.UniqUser
+	userID := userIDCtx.(string)
+	links, err := h.s.LinksByUser(user.UniqUser(userID))
 	if err != nil {
 		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)
 		return
