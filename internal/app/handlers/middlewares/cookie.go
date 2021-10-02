@@ -5,25 +5,18 @@ package middlewares
 import (
 	"context"
 	"github.com/google/uuid"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"go.uber.org/zap"
 	"net/http"
 )
-
-// CookieUserIDName define cookie name for uuid
-const CookieUserIDName = "user_id"
-
-// ContextType set context name for user id
-type ContextType string
-
-var UserIDCtxName ContextType = "ctxUserId"
 
 type CookieMw struct {
 	h http.Handler
 	l *zap.Logger
 }
 
-func NewMw(l *zap.Logger) *CookieMw {
+func New(l *zap.Logger) *CookieMw {
 	return &CookieMw{l: l}
 }
 
@@ -33,7 +26,7 @@ func (h CookieMw) CookieMiddleware(next http.Handler) http.Handler {
 		// Generate new uuid
 		userID := uuid.New().String()
 		// Check if set cookie
-		if cookieUserID, err := r.Cookie(CookieUserIDName); err == nil {
+		if cookieUserID, err := r.Cookie(consts.CookieUserIDName); err == nil {
 			h.l.Info("cookieUserId", zap.String("cookieUserId", cookieUserID.Value))
 			_ = helpers.Decode(cookieUserID.Value, &userID)
 		}
@@ -43,7 +36,7 @@ func (h CookieMw) CookieMiddleware(next http.Handler) http.Handler {
 		h.l.Info("User encoded", zap.String("Encoded", encoded))
 		if err == nil {
 			cookie := &http.Cookie{
-				Name:  CookieUserIDName,
+				Name:  consts.CookieUserIDName,
 				Value: encoded,
 				Path:  "/",
 			}
@@ -51,6 +44,6 @@ func (h CookieMw) CookieMiddleware(next http.Handler) http.Handler {
 		} else {
 			h.l.Info("Encode cookie error", zap.Error(err))
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), UserIDCtxName, userID)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), consts.UserIDCtxName, userID)))
 	})
 }
