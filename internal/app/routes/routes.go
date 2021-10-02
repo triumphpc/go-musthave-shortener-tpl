@@ -30,12 +30,10 @@ func Router(h *handlers.Handler, db *sql.DB, l *zap.Logger) *mux.Router {
 	//	cookieMw.CookieMiddleware(delete.New(db, l)),
 	//).Methods(http.MethodDelete)
 	// Get user session links in JSON
-	//rtr.Handle(
-	//	"/user/urls",
-	//	cookieMw.CookieMiddleware(http.HandlerFunc(h.GetUrls)),
-	//).Methods(http.MethodGet)
-	rtr.HandleFunc("/user/urls", h.GetUrls).Methods(http.MethodGet)
-
+	rtr.Handle(
+		"/user/urls",
+		cookieMw.CookieMiddleware(http.HandlerFunc(h.GetUrls)),
+	).Methods(http.MethodGet)
 	// Ping db connection
 	rtr.Handle("/ping", ping.New(db, l))
 	// Get origin by short link

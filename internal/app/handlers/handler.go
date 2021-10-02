@@ -117,7 +117,8 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
+	//short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
+	short, err := h.s.Save("all", url.URL)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
@@ -218,7 +219,8 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
-	links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
+	//links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
+	links, err := h.s.LinksByUser("all")
 	if err != nil {
 		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)
 		return
