@@ -30,8 +30,8 @@ func New() (*UserStorage, error) {
 }
 
 // LinkByShort implement interface for get data from storage by userId and shortLink
-func (s *UserStorage) LinkByShort(short shortlink.Short) (string, error) {
-	shorts, ok := s.data["all"]
+func (s *UserStorage) LinkByShort(userID user.UniqUser, short shortlink.Short) (string, error) {
+	shorts, ok := s.data[userID]
 	if !ok {
 		return "", ErrURLNotFound
 	}
