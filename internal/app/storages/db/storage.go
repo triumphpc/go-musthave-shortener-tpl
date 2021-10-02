@@ -3,12 +3,14 @@ package db
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
+	"github.com/pressly/goose/v3"
+	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
+	"github.com/triumphpc/go-musthave-shortener-tpl/migrations"
 	"go.uber.org/zap"
 )
 
@@ -18,45 +20,14 @@ type PostgreSQLStorage struct {
 	l  *zap.Logger
 }
 
-// ErrURLNotFound error by package level
-var ErrURLNotFound = errors.New("url not found")
-
-// ErrAlreadyHasShort if exist
-var ErrAlreadyHasShort = errors.New("already has short")
-
-// Scheme of database
-const scheme = `
-create schema if not exists storage;
-create table if not exists storage.short_links
-(
-    id             serial       not null
-        constraint short_links_pk
-            primary key,
-    user_id        varchar(50),
-    origin         varchar(255) not null,
-    short          varchar(50)  not null,
-    correlation_id varchar(100)
-);
-comment on table storage.short_links is 'Short links from users';
-comment on column storage.short_links.id is 'identifier of record';
-comment on column storage.short_links.user_id is 'User identifier';
-comment on column storage.short_links.origin is 'Origin link';
-comment on column storage.short_links.short is 'Short link';
-comment on column storage.short_links.correlation_id is 'Correlation itentity';
-alter table storage.short_links
-    owner to postgres;
-create unique index if not exists short_links_user_id_origin_uindex
-    on storage.short_links (user_id, origin);
-`
-
 // sqlNewRecord for new record in db
 const sqlNewRecord = `
 insert into storage.short_links (id, user_id, origin, short) 
 values (default, $1, $2, $3)
 `
-const sqlGetCurrentRecord = `
-select short from storage.short_links where user_id=$1 and origin=$2
-`
+
+// sqlGetCurrentRecord for get current record
+const sqlGetCurrentRecord = "select short from storage.short_links where user_id=$1 and origin=$2;"
 
 // sqlBunchNewRecord for new record in db
 const sqlBunchNewRecord = `
@@ -71,7 +42,7 @@ const sqlSelectOrigin = `
 select origin from storage.short_links where short=$1
 `
 
-// sqlSelectOriginAndShort select origin and short
+// SqlSelectOriginAndShort select origin and short
 const sqlSelectOriginAndShort = `
 select origin, short from storage.short_links where user_id=$1
 `
@@ -79,8 +50,9 @@ select origin, short from storage.short_links where user_id=$1
 // New New new Storage with not null fields
 func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 	// Check if scheme exist
-	if _, err := c.ExecContext(context.Background(), scheme); err != nil {
-		return nil, err
+	goose.SetBaseFS(migrations.EmbedMigrations)
+	if err := goose.Up(c, "."); err != nil {
+		panic(err)
 	}
 	return &PostgreSQLStorage{c, l}, nil
 }
@@ -91,7 +63,7 @@ func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
 	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin)
 
 	if err != nil {
-		return "", ErrURLNotFound
+		return "", er.ErrURLNotFound
 	}
 	return origin, nil
 }
@@ -131,7 +103,7 @@ func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink
 				// take current link
 				var short string
 				_ = s.db.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
-				return shortlink.Short(short), ErrAlreadyHasShort
+				return shortlink.Short(short), er.ErrAlreadyHasShort
 			}
 		}
 		return short, err
@@ -192,7 +164,7 @@ func (s *PostgreSQLStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortU
 			s.l.Info("Save bunch error", zap.Error(err))
 		}
 	}
-	// шаг 4 — сохраняем изменения
+	// Save changes
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
