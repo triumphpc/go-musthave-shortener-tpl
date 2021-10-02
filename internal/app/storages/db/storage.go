@@ -39,7 +39,7 @@ do nothing;
 
 // sqlSelectFromOrigin select origin
 const sqlSelectOrigin = `
-select origin from storage.short_links where short=$1 and user_id=$2
+select origin from storage.short_links where short=$1
 `
 
 // SqlSelectOriginAndShort select origin and short
@@ -60,7 +60,7 @@ func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 // LinkByShort implement interface for get data from storage by userId and shortLink
 func (s *PostgreSQLStorage) LinkByShort(userID user.UniqUser, short shortlink.Short) (string, error) {
 	var origin string
-	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, short, userID).Scan(&origin)
+	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, short).Scan(&origin)
 
 	if err != nil {
 		return "", er.ErrURLNotFound
