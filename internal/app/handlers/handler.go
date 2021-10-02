@@ -39,29 +39,27 @@ type Handler struct {
 
 // New Allocation new handler
 func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
+	var s Repository
+	var err error
+
 	// Check in db has
 	if c != nil {
 		l.Info("Set db handler")
-		s, err := dbh.New(c, l)
-		if err != nil {
-			return nil, err
-		}
-		return &Handler{
-			s: s,
-			l: l,
-		}, nil
+		s, err = dbh.New(c, l)
 	} else {
 		l.Info("Set file handler")
 		// File and memory storage
-		s, err := file.New()
-		if err != nil {
-			return nil, err
-		}
-		return &Handler{
-			s: s,
-			l: l,
-		}, nil
+		s, err = file.New()
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Handler{
+		s: s,
+		l: l,
+	}, nil
 }
 
 // Save convert link to shorting and store in database
