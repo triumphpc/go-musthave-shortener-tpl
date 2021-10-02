@@ -57,7 +57,7 @@ func main() {
 		// Send request to conveyor example
 		Handler: middlewares.Conveyor(
 			rtr, middlewares.NewCompressor(l).GzipMiddleware,
-			middlewares.New(l).CookieMiddleware,
+			middlewares.NewMw(l).CookieMiddleware,
 		),
 	}
 	// Goroutine
