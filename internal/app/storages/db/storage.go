@@ -72,9 +72,9 @@ func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
 		return "", er.ErrURLNotFound
 	}
 
-	//if gone {
-	//	return "", er.ErrURLIsGone
-	//}
+	if gone {
+		return "", er.ErrURLIsGone
+	}
 
 	return origin, nil
 }

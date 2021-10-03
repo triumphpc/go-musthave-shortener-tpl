@@ -48,6 +48,7 @@ func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
 	if c != nil {
 		l.Info("Set db handler")
 		s, err = dbh.New(c, l)
+		_ = s.Clear()
 	} else {
 		l.Info("Set file handler")
 		// File and memory storage
