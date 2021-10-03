@@ -60,7 +60,7 @@ create table if not exists storage.short_links
     origin         varchar(255) not null,
     short          varchar(50)  not null,
     correlation_id varchar(100),
-    add is_deleted boolean default false
+    is_deleted boolean default false
 );
 comment on table storage.short_links is 'Short links from users';
 comment on column storage.short_links.id is 'identifier of record';
