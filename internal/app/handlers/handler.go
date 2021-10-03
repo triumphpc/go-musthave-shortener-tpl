@@ -29,6 +29,8 @@ type Repository interface {
 	BunchSave(userID user.UniqUser, urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
 	// LinksByUser return all user links
 	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
+	// Clear storage
+	Clear() error
 }
 
 // Handler general type for handler
@@ -64,6 +66,7 @@ func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
 
 // Save convert link to shorting and store in database
 func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
+	h.l.Info("Save run")
 	if r.Body == http.NoBody {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
@@ -100,6 +103,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 // SaveJSON convert link to shorting and store in database
 func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
+	h.l.Info("SaveJSON run")
 	body, err := helpers.BodyFromJSON(&w, r)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
@@ -116,6 +120,12 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	if url.URL == "" {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// Clear storage
+	err = h.s.Clear()
+	if err != nil {
+		h.l.Info("Don't clear data")
 	}
 
 	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
@@ -151,6 +161,7 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 
 // BunchSaveJSON save data and return from mass
 func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
+	h.l.Info("BunchSaveJSON run")
 	body, err := helpers.BodyFromJSON(&w, r)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
@@ -195,6 +206,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 
 // Get fid origin link from storage
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	h.l.Info("Get run")
 	// Validation id params
 	params := mux.Vars(r)
 	id := params["id"]
@@ -219,6 +231,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
+	h.l.Info("GetUrls run")
 	links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
 	if err != nil {
 		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)

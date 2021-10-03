@@ -26,6 +26,9 @@ insert into storage.short_links (id, user_id, origin, short)
 values (default, $1, $2, $3)
 `
 
+// sqlDeleteRecords sql for clear records
+const sqlDeleteRecords = `truncate storage.short_links`
+
 // sqlGetCurrentRecord for get current record
 const sqlGetCurrentRecord = "select short from storage.short_links where user_id=$1 and origin=$2;"
 
@@ -178,4 +181,11 @@ func (s *PostgreSQLStorage) BunchSave(userID user.UniqUser, urls []shortlink.URL
 	}
 
 	return shorts, nil
+}
+
+func (s *PostgreSQLStorage) Clear() error {
+	if _, err := s.db.ExecContext(context.Background(), sqlDeleteRecords); err != nil {
+		return err
+	}
+	return nil
 }

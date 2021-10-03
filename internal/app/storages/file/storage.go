@@ -90,3 +90,8 @@ func (s *UserStorage) BunchSave(userID user.UniqUser, urls []shortlink.URLs) ([]
 	var shorts []shortlink.ShortURLs
 	return shorts, nil
 }
+
+// Clear database
+func (s *UserStorage) Clear() error {
+	return nil
+}
