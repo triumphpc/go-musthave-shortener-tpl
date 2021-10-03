@@ -54,9 +54,14 @@ select origin, short from storage.short_links where user_id=$1
 func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 	// Check if scheme exist
 	goose.SetBaseFS(migrations.EmbedMigrations)
+
+	l.Info("TEST HERE 4")
 	if err := goose.Up(c, "."); err != nil {
+		l.Info("TEST HERE 5")
 		panic(err)
 	}
+
+	l.Info("TEST HERE 6")
 	return &PostgreSQLStorage{c, l}, nil
 }
 

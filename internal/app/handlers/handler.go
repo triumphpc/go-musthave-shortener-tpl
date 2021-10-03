@@ -47,9 +47,12 @@ func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
 	// Check in db has
 	if c != nil {
 		l.Info("Set db handler")
+
+		l.Info("TEST HERE 1")
+
 		s, err = dbh.New(c, l)
 
-		l.Info("TEST HERE ")
+		l.Info("TEST HERE 2 ")
 		l.Info("ERROR", zap.Error(err))
 	} else {
 		l.Info("Set file handler")
