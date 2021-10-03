@@ -122,10 +122,10 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Clear storage
-	//err = h.s.Clear()
-	//if err != nil {
-	//	h.l.Info("Don't clear data")
-	//}
+	err = h.s.Clear()
+	if err != nil {
+		h.l.Info("Don't clear data")
+	}
 	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
@@ -218,17 +218,17 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
-	url, _ := h.s.LinkByShort(shortlink.Short(id))
-	//if err != nil {
-	//	if errors.Is(err, er.ErrURLIsGone) {
-	//		http.Error(w, er.ErrURLIsGone.Error(), http.StatusGone)
-	//		return
-	//	}
-	//
-	//	h.l.Info("Get error", zap.Error(err))
-	//	http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
-	//	return
-	//}
+	url, err := h.s.LinkByShort(shortlink.Short(id))
+	if err != nil {
+		if errors.Is(err, er.ErrURLIsGone) {
+			http.Error(w, er.ErrURLIsGone.Error(), http.StatusGone)
+			return
+		}
+
+		h.l.Info("Get error", zap.Error(err))
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
+		return
+	}
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 

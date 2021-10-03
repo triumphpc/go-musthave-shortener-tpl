@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -42,11 +41,8 @@ do nothing;
 `
 
 // sqlSelectFromOrigin select origin
-//const sqlSelectOrigin = `
-//select origin, is_deleted from storage.short_links where short=$1
-//`
 const sqlSelectOrigin = `
-select origin from storage.short_links where short=$1
+select origin, is_deleted from storage.short_links where short=$1
 `
 
 // SqlSelectOriginAndShort select origin and short
@@ -67,18 +63,17 @@ func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 // LinkByShort implement interface for get data from storage by userId and shortLink
 func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
 	var origin string
-	//var gone bool
+	var gone bool
 
-	//err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin, &gone)
-	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin)
+	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin, &gone)
 
 	if err != nil {
 		return "", er.ErrURLNotFound
 	}
 
-	//if gone {
-	//	return "", er.ErrURLIsGone
-	//}
+	if gone {
+		return "", er.ErrURLIsGone
+	}
 
 	return origin, nil
 }
@@ -175,7 +170,6 @@ func (s *PostgreSQLStorage) BunchSave(userID user.UniqUser, urls []shortlink.URL
 				ID:    v.ID,
 			})
 		} else {
-			fmt.Println(err)
 			s.l.Info("Save bunch error", zap.Error(err))
 		}
 	}
