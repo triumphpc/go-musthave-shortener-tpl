@@ -122,10 +122,10 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Clear storage
-	err = h.s.Clear()
-	if err != nil {
-		h.l.Info("Don't clear data")
-	}
+	//err = h.s.Clear()
+	//if err != nil {
+	//	h.l.Info("Don't clear data")
+	//}
 	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
