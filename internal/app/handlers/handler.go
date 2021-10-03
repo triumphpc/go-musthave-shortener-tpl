@@ -80,6 +80,12 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	}
 	origin := string(body)
 
+	// Clear storage
+	err = h.s.Clear()
+	if err != nil {
+		h.l.Info("Don't clear data")
+	}
+
 	short, err := h.s.Save(helpers.GetContextUserID(r), origin)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
@@ -173,6 +179,12 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// Clear storage
+	err = h.s.Clear()
+	if err != nil {
+		h.l.Info("Don't clear data")
 	}
 
 	shorts, err := h.s.BunchSave(helpers.GetContextUserID(r), urls)
