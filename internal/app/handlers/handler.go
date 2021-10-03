@@ -48,12 +48,17 @@ func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
 	if c != nil {
 		l.Info("Set db handler")
 		s, err = dbh.New(c, l)
-		_ = s.Clear()
+
+		l.Info("TEST HERE ")
+		l.Info("ERROR", zap.Error(err))
 	} else {
 		l.Info("Set file handler")
 		// File and memory storage
 		s, err = file.New()
 	}
+
+	l.Info("TEST ")
+	l.Info("ERROR", zap.Error(err))
 
 	if err != nil {
 		return nil, err
