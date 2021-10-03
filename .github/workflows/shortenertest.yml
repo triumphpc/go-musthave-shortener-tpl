@@ -81,8 +81,7 @@ jobs:
               -binary-path=cmd/shortener/shortener \
               -server-host=$SERVER_HOST \
               -server-port=$SERVER_PORT \
-              -server-base-url="http://$SERVER_HOST:$SERVER_PORT" \
-              -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable'
+              -server-base-url="http://$SERVER_HOST:$SERVER_PORT"
 
       - name: "Code increment #6"
         if: always()
