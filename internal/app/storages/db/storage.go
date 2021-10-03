@@ -3,8 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"github.com/jackc/pgerrcode"
-	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
@@ -108,15 +106,15 @@ func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink
 	short := shortlink.Short(helpers.RandomString(10))
 	// Save to database
 	if _, err := s.db.ExecContext(context.Background(), sqlNewRecord, userID, origin, short); err != nil {
-		if err, ok := err.(*pq.Error); ok {
-			if err.Code == pgerrcode.UniqueViolation {
-				// take current link
-				var short string
-				_ = s.db.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
-				return shortlink.Short(short), er.ErrAlreadyHasShort
-			}
-		}
-		return short, err
+		//if err, ok := err.(*pq.Error); ok {
+		//	if err.Code == pgerrcode.UniqueViolation {
+		//		// take current link
+		//		var short string
+		//		_ = s.db.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
+		//		return shortlink.Short(short), er.ErrAlreadyHasShort
+		//	}
+		//}
+		//return short, err
 	}
 	return short, nil
 }
