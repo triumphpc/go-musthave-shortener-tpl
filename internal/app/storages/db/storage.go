@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -171,6 +172,7 @@ func (s *PostgreSQLStorage) BunchSave(userID user.UniqUser, urls []shortlink.URL
 				ID:    v.ID,
 			})
 		} else {
+			fmt.Println(err)
 			s.l.Info("Save bunch error", zap.Error(err))
 		}
 	}
