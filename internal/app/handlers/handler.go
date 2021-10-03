@@ -22,7 +22,7 @@ import (
 // go:generate mockery --name=Repository --inpackage
 type Repository interface {
 	// LinkByShort get original link from all storage
-	LinkByShort(userID user.UniqUser, short shortlink.Short) (string, error)
+	LinkByShort(short shortlink.Short) (string, error)
 	// Save link to repository
 	Save(userID user.UniqUser, url string) (shortlink.Short, error)
 	// BunchSave save mass urls and generate shorts
@@ -203,8 +203,13 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
-	url, err := h.s.LinkByShort(helpers.GetContextUserID(r), shortlink.Short(id))
+	url, err := h.s.LinkByShort(shortlink.Short(id))
 	if err != nil {
+		if errors.Is(err, er.ErrURLIsGone) {
+			http.Error(w, er.ErrURLIsGone.Error(), http.StatusGone)
+			return
+		}
+
 		h.l.Info("Get error", zap.Error(err))
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return

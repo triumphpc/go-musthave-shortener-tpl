@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/delete"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/ping"
 	"go.uber.org/zap"
 	"net/http"
@@ -21,10 +22,7 @@ func Router(h *handlers.Handler, db *sql.DB, l *zap.Logger) *mux.Router {
 	// Ping db connection
 	rtr.Handle("/ping", ping.New(db, l))
 	// Delete links session
-	//rtr.Handle(
-	//	"/api/user/urls",
-	//	cookieMw.CookieMiddleware(delete.New(db, l)),
-	//).Methods(http.MethodDelete)
+	rtr.Handle("/api/user/urls", delete.New(db, l)).Methods(http.MethodDelete)
 	// Get origin by short link
 	rtr.HandleFunc("/{id:.+}", h.Get).Methods(http.MethodGet)
 	// Save origin to short
