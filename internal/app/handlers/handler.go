@@ -175,12 +175,6 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Clear storage
-	err = h.s.Clear()
-	if err != nil {
-		h.l.Info("Don't clear data")
-	}
-
 	shorts, err := h.s.BunchSave(helpers.GetContextUserID(r), urls)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
