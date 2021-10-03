@@ -11,7 +11,6 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
-	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -45,14 +44,14 @@ func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
 	var err error
 
 	// Check in db has
-	if c != nil {
-		l.Info("Set db handler")
-		s, err = dbh.New(c, l)
-	} else {
-		l.Info("Set file handler")
-		// File and memory storage
-		s, err = file.New()
-	}
+	//if c != nil {
+	//	l.Info("Set db handler")
+	//	s, err = dbh.New(c, l)
+	//} else {
+	l.Info("Set file handler")
+	// File and memory storage
+	s, err = file.New()
+	//}
 
 	if err != nil {
 		return nil, err
