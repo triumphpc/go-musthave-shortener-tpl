@@ -69,8 +69,7 @@ jobs:
         run: |
           shortenertest -test.v -test.run=^TestIteration4$ \
               -source-path=. \
-              -binary-path=cmd/shortener/shortener \
-              -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable'
+              -binary-path=cmd/shortener/shortener
 
       - name: "Code increment #5"
         if: always()
