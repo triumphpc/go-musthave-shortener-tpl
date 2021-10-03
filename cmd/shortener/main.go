@@ -24,8 +24,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	l.Info("TEST 555")
+
 	// Db instance
 	dbh, err := db.New(l)
+
+	l.Info("TEST 123")
+
 	if errors.Is(err, db.ErrDatabaseNotAvailable) {
 		// Only log
 		l.Info("Db error", zap.Error(err))
