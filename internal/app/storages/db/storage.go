@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgerrcode"
+	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
@@ -40,8 +42,11 @@ do nothing;
 `
 
 // sqlSelectFromOrigin select origin
+//const sqlSelectOrigin = `
+//select origin, is_deleted from storage.short_links where short=$1
+//`
 const sqlSelectOrigin = `
-select origin, is_deleted from storage.short_links where short=$1
+select origin from storage.short_links where short=$1
 `
 
 // SqlSelectOriginAndShort select origin and short
@@ -62,17 +67,18 @@ func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 // LinkByShort implement interface for get data from storage by userId and shortLink
 func (s *PostgreSQLStorage) LinkByShort(short shortlink.Short) (string, error) {
 	var origin string
-	var gone bool
+	//var gone bool
 
-	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin, &gone)
+	//err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin, &gone)
+	err := s.db.QueryRowContext(context.Background(), sqlSelectOrigin, string(short)).Scan(&origin)
 
 	if err != nil {
 		return "", er.ErrURLNotFound
 	}
 
-	if gone {
-		return "", er.ErrURLIsGone
-	}
+	//if gone {
+	//	return "", er.ErrURLIsGone
+	//}
 
 	return origin, nil
 }
@@ -107,15 +113,15 @@ func (s *PostgreSQLStorage) Save(userID user.UniqUser, origin string) (shortlink
 	short := shortlink.Short(helpers.RandomString(10))
 	// Save to database
 	if _, err := s.db.ExecContext(context.Background(), sqlNewRecord, userID, origin, short); err != nil {
-		//if err, ok := err.(*pq.Error); ok {
-		//	if err.Code == pgerrcode.UniqueViolation {
-		//		// take current link
-		//		var short string
-		//		_ = s.db.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
-		//		return shortlink.Short(short), er.ErrAlreadyHasShort
-		//	}
-		//}
-		return short, nil
+		if err, ok := err.(*pq.Error); ok {
+			if err.Code == pgerrcode.UniqueViolation {
+				// take current link
+				var short string
+				_ = s.db.QueryRowContext(context.Background(), sqlGetCurrentRecord, string(userID), origin).Scan(&short)
+				return shortlink.Short(short), er.ErrAlreadyHasShort
+			}
+		}
+		return short, err
 	}
 	return short, nil
 }
