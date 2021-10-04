@@ -79,6 +79,8 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	}
 	origin := string(body)
 
+	h.l.Info("Save origin", zap.String("origin", origin))
+
 	short, err := h.s.Save(helpers.GetContextUserID(r), origin)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
@@ -257,6 +259,8 @@ func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 			Origin: v,
 		})
 	}
+	h.l.Info("User links", zap.Reflect("links", lks))
+
 	body, err := json.Marshal(lks)
 	if err != nil {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)

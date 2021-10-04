@@ -33,7 +33,6 @@ func (h CookieMw) CookieMiddleware(next http.Handler) http.Handler {
 		// Generate hash from userId
 		encoded, err := helpers.Encode(userID)
 		h.l.Info("User ID", zap.String("ID", userID))
-		h.l.Info("User encoded", zap.String("Encoded", encoded))
 		if err == nil {
 			cookie := &http.Cookie{
 				Name:  consts.CookieUserIDName,
