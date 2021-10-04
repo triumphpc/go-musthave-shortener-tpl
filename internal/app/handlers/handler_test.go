@@ -32,7 +32,6 @@ func TestHandler(t *testing.T) {
 		path       string
 		saveParam  bool
 		checkParam bool
-		//mock       *mocks.Repository
 	}
 
 	// Structure of tests
@@ -174,11 +173,6 @@ func TestHandler(t *testing.T) {
 					tt.request.target = lp.shortLink
 				}
 			}
-
-			// mock storage
-			//if tt.request.mock != nil {
-			//	h.SetRepository(tt.request.mock)
-			//}
 
 			request := httptest.NewRequest(tt.request.method, tt.request.target, r)
 
