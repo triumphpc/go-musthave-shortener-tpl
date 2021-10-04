@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"time"
 )
 
 // encKey rand key
@@ -21,18 +22,22 @@ type encData struct {
 // encInstance save encrypt data
 var encInstance *encData
 
-// Returns an int >= min, < max
-func randomInt(min, max int) int {
-	return min + rand.Intn(max-min)
+const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
+
+var seededRand *rand.Rand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+func stringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
 }
 
-// RandomString Generate a random string of A-Z chars with len = l
-func RandomString(len int) string {
-	bytes := make([]byte, len)
-	for i := 0; i < len; i++ {
-		bytes[i] = byte(randomInt(65, 90))
-	}
-	return string(bytes)
+// RandomString Get rand string
+func RandomString(length int) string {
+	return stringWithCharset(length, charset)
 }
 
 // Decode userId  from encrypted cookie
