@@ -121,6 +121,8 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.l.Info("save origin", zap.String("URL", url.URL))
+
 	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
@@ -136,18 +138,20 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		Result string `json:"result"`
 	}{Result: slURL}
 
-	// log to stdout
 	h.l.Info("save to json format", zap.Reflect("URL", result))
 	body, err = json.Marshal(result)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
+
+	h.l.Info("prepare response")
 	// Prepare response
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	_, err = w.Write(body)
 	if err != nil {
+		h.l.Info("base status request")
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 	}
 }
@@ -167,11 +171,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	// Clear storage
-	err = h.s.Clear()
-	if err != nil {
-		h.l.Info("Don't clear data")
-	}
+
 	shorts, err := h.s.BunchSave(helpers.GetContextUserID(r), urls)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
@@ -221,6 +221,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if errors.Is(err, er.ErrURLIsGone) {
+			h.l.Info("Get error is gone", zap.Error(err))
 			http.Error(w, er.ErrURLIsGone.Error(), http.StatusGone)
 			return
 		}
@@ -229,6 +230,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
+	h.l.Info("redirect")
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
