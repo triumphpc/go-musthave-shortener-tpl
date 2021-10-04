@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
-	"github.com/pressly/goose"
+	"github.com/pressly/goose/v3"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
