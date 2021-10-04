@@ -240,7 +240,8 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 	h.l.Info("GetUrls run")
 	links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
-	if err != nil {
+
+	if err != nil || len(links) == 0 {
 		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)
 		return
 	}

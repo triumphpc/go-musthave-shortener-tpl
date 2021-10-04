@@ -43,6 +43,19 @@ func TestHandler(t *testing.T) {
 	}{
 		// implement all tests
 		{
+			name:    "Test increment #9",
+			handler: h.GetUrls,
+			request: request{
+				method: http.MethodGet,
+				target: "/user/urls",
+				path:   "/user/urls",
+			},
+			want: want{
+				code:        http.StatusNoContent,
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
 			name:    "Test Save handler #1",
 			handler: h.Save,
 			request: request{
