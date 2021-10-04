@@ -141,33 +141,15 @@ func TestHandler(t *testing.T) {
 				method:     http.MethodPost,
 				target:     "/",
 				path:       "/",
-				body:       "{\"url\": \"vvvvvvvv\"}",
+				body:       "{\"url\": \"http://test.ru\"}",
 				saveParam:  false,
 				checkParam: true,
 			},
 			want: want{
 				code:        http.StatusCreated,
-				response:    "{\"result\":\"http://localhost:8080/TLMODYLUMG\"}",
 				contentType: "application/json; charset=utf-8",
 			},
 		},
-		//{
-		//	name:    "Test Save handler with mock storage #1",
-		//	handler: h.Save,
-		//	request: request{
-		//		method:    http.MethodPost,
-		//		target:    "/",
-		//		path:      "/",
-		//		body:      "http://newlink.ru",
-		//		saveParam: true,
-		//		mock:      mock,
-		//	},
-		//	want: want{
-		//		code:        http.StatusCreated,
-		//		response:    "",
-		//		contentType: "text/plain; charset=utf-8",
-		//	},
-		//},
 	}
 
 	type lastParams struct {
