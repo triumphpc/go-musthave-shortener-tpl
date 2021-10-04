@@ -24,9 +24,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	l.Info("TEST 1")
-	l.Info("TEST 2")
-
 	// Db instance
 	dbh, err := db.New(l)
 
