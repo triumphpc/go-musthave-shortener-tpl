@@ -213,7 +213,20 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
+	h.l.Info("Get id:", zap.String("id", id))
 	url, err := h.s.LinkByShort(shortlink.Short(id))
+
+	h.l.Info("Result:", zap.Reflect("result",
+		struct {
+			id  string
+			url string
+			err error
+		}{
+			id,
+			url,
+			err,
+		}),
+	)
 	if err != nil {
 		if errors.Is(err, er.ErrURLIsGone) {
 			http.Error(w, er.ErrURLIsGone.Error(), http.StatusGone)
