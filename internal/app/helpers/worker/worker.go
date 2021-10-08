@@ -145,7 +145,7 @@ func (q *Queue) PopWait() *Task {
 // Push lock all goroutines for push task in queue
 func (p *Pool) Push(ids []string, userID string) bool {
 	// Check if workers has
-	if p.isAvail == false {
+	if !p.isAvail {
 		return false
 	}
 	p.logger.Info("Push new task in queue")

@@ -41,7 +41,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// Add to pool ids on delete
 	userID := helpers.GetContextUserID(r)
-	if h.p.Push(linkIDs, string(userID)) == false {
+	if !h.p.Push(linkIDs, string(userID)) {
 		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 	} else {
 		w.WriteHeader(http.StatusAccepted)
