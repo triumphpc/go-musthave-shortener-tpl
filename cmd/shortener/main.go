@@ -8,6 +8,7 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
 	"go.uber.org/zap"
@@ -26,19 +27,22 @@ func main() {
 	}
 	// Db instance
 	dbh, err := db.New(l)
-
 	if errors.Is(err, db.ErrDatabaseNotAvailable) {
-		// Only log
 		l.Info("Db error", zap.Error(err))
 	}
-
 	// Allocation handler and storage
 	h, err := handlers.New(dbh, l)
 	if err != nil {
 		l.Fatal("app error exit", zap.Error(err))
 	}
+	// Worker for background tasks
+	ctx := context.Background()
+	pool := worker.New(dbh, l)
+	// Run worker pool
+	pool.Run(ctx)
+
 	// Get routes
-	rtr := routes.Router(h, dbh, l)
+	rtr := routes.Router(h, dbh, l, pool)
 	http.Handle("/", rtr)
 
 	// Context with cancel func
@@ -86,7 +90,7 @@ func main() {
 	}
 
 	l.Info("The service is shutting down...")
-	if err = srv.Shutdown(context.Background()); err != nil {
+	if err = srv.Shutdown(ctx); err != nil {
 		l.Fatal("app error exit", zap.Error(err))
 	}
 	l.Info("Done")
