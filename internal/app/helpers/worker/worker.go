@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"runtime"
@@ -145,7 +145,6 @@ func (w *Worker) loop(ctx context.Context) error {
 		case <-ctx.Done():
 			w.pool.logger.Info("Aborting from ctx")
 		}
-
 	}()
 
 	for {
@@ -199,13 +198,12 @@ func (p *Pool) Push(ids []string, userID string) bool {
 
 // bunchUpdateAsDeleted  update as deleted
 func (w *Worker) bunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
-	return errors.New("TEST")
-	//if len(ids) == 0 {
-	//	return nil
-	//}
-	//
-	//idsArr := pq.Array(ids)
-	//_, err := w.pool.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
-	//
-	//return err
+	if len(ids) == 0 {
+		return nil
+	}
+
+	idsArr := pq.Array(ids)
+	_, err := w.pool.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
+
+	return err
 }
