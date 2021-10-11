@@ -37,9 +37,9 @@ func main() {
 	}
 	// Worker for background tasks
 	ctx := context.Background()
-	pool := worker.New(dbh, l)
+	pool := worker.New(ctx, dbh, l)
 	// Run worker pool
-	pool.Run(ctx)
+	//pool.Run(ctx)
 
 	// Get routes
 	rtr := routes.Router(h, dbh, l, pool)

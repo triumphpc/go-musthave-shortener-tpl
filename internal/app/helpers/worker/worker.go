@@ -3,8 +3,9 @@ package worker
 import (
 	"context"
 	"database/sql"
-	"github.com/lib/pq"
+	"errors"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
 )
@@ -18,12 +19,10 @@ type Pool struct {
 	db *sql.DB
 	// Queue for marks as deleted
 	queue *Queue
-	// Make error group
-	errCh chan error
 	// Waiting group for worker goroutines
 	wg *sync.WaitGroup
 	// Total counter
-	total int
+	total chan int
 	// Has workers for work
 	isAvail bool
 }
@@ -63,8 +62,62 @@ const sqlUpdate = `
 `
 
 // New Instance new pool
-func New(db *sql.DB, l *zap.Logger) *Pool {
-	return &Pool{logger: l, db: db}
+func New(ctx context.Context, db *sql.DB, l *zap.Logger) *Pool {
+	p := &Pool{logger: l, db: db}
+
+	p.logger.Info("Init new worker pool")
+	// Init new worker pool
+	p.workerPool = make([]*Worker, 0, runtime.NumCPU())
+	// Init queue for tasks
+	p.queue = p.newQueue()
+	// Make workers
+	for i := 0; i < runtime.NumCPU(); i++ {
+		p.workerPool = append(p.workerPool, p.newWorker(i))
+	}
+	// Run all workers in goroutines
+	ctx, cancel := context.WithCancel(ctx)
+	// Make error group for goroutines
+	g, _ := errgroup.WithContext(ctx)
+	p.wg = &sync.WaitGroup{}
+
+	for _, w := range p.workerPool {
+		p.wg.Add(1)
+		worker := w
+		f := func() error {
+			return worker.loop(ctx)
+		}
+		g.Go(f)
+	}
+	p.isAvail = true
+
+	// If we have some error in goroutine
+	go func() {
+		if err := g.Wait(); err != nil {
+			p.logger.Info("Pool error", zap.Error(err))
+		}
+	}()
+
+	// When all goroutines closed
+	go func() {
+		p.wg.Wait()
+		p.isAvail = false
+		close(p.total)
+		// close context
+		cancel()
+	}()
+
+	// monitor for total updates
+	p.total = make(chan int)
+	go func() {
+		total := 0
+		for c := range p.total {
+			total = total + c
+		}
+		// Out how many updates
+		p.logger.Info("Total updated", zap.Int("count", total))
+	}()
+
+	return p
 }
 
 // newQueue Init new queue for workers
@@ -82,48 +135,31 @@ func (p *Pool) newWorker(id int) *Worker {
 }
 
 // loop listen for new tasks
-func (w *Worker) loop(ctx context.Context) {
-	var defErr error
-
+func (w *Worker) loop(ctx context.Context) error {
 	defer func() {
 		w.pool.logger.Info("Close worker", zap.Int("worker id", w.id))
+		// Close counter
+		w.pool.wg.Done()
+
 		select {
-		// Send all to chan
-		case w.pool.errCh <- defErr:
 		case <-ctx.Done():
 			w.pool.logger.Info("Aborting from ctx")
 		}
-		// Close counter
-		w.pool.wg.Done()
+
 	}()
 
-exit:
 	for {
 		t := w.pool.queue.PopWait()
 		// bunch update
 		w.pool.logger.Info("Worker get new task", zap.Int("worker id", w.id))
 
 		if err := w.bunchUpdateAsDeleted(ctx, t.ids, t.userID); err != nil {
-			defErr = err
 			w.pool.logger.Info("Run to out from loop ")
-			break exit
+			return err
 		}
-		// On ranIn single channel (it's only example how we can use channels)
-		// And show fanOut fanIn pattern
-		inputCh := make(chan string)
-		// Put in channel all ids
-		go func() {
-			for _, id := range t.ids {
-				inputCh <- id
-			}
-			close(inputCh)
-		}()
-		// Redirection chan (only example)
-		for range w.pool.fanIn(inputCh) {
-			w.pool.total++
-		}
+		// Write len for counter
+		w.pool.total <- len(t.ids)
 	}
-	w.pool.logger.Info("To end")
 }
 
 // PopWait Get task for update from fanOut
@@ -161,77 +197,15 @@ func (p *Pool) Push(ids []string, userID string) bool {
 	return true
 }
 
-// fanIn create simple chan from worker pools (example only)
-func (p *Pool) fanIn(ch <-chan string) (out chan string) {
-	out = make(chan string)
-
-	go func() {
-		// wg example
-		wg := &sync.WaitGroup{}
-
-		for item := range ch {
-			wg.Add(1)
-			go func(id string) {
-				defer wg.Done()
-				out <- id
-
-			}(item)
-		}
-		wg.Wait()
-		close(out)
-	}()
-	return out
-}
-
-// Run worker pool
-func (p *Pool) Run(ctx context.Context) {
-	p.logger.Info("Init new worker pool")
-	// Init new worker pool
-	p.workerPool = make([]*Worker, 0, runtime.NumCPU())
-	// Init queue for tasks
-	p.queue = p.newQueue()
-	// Make workers
-	for i := 0; i < runtime.NumCPU(); i++ {
-		p.workerPool = append(p.workerPool, p.newWorker(i))
-	}
-	// Make error group chan
-	p.errCh = make(chan error)
-	// Run all workers in goroutines
-	ctx, cancel := context.WithCancel(ctx)
-	p.wg = &sync.WaitGroup{}
-
-	for _, w := range p.workerPool {
-		p.wg.Add(1)
-		go w.loop(ctx)
-	}
-	p.isAvail = true
-
-	// Listening error group chan
-	go func() {
-		if err := <-p.errCh; err != nil {
-			p.logger.Info("Pool error", zap.Error(err))
-			cancel()
-		}
-	}()
-	// When all goroutines closed
-	go func() {
-		p.wg.Wait()
-		p.logger.Info("Close error chan")
-		close(p.errCh)
-		p.isAvail = false
-		// Out how many updates
-		p.logger.Info("Total updated", zap.Int("count", p.total))
-	}()
-}
-
 // bunchUpdateAsDeleted  update as deleted
 func (w *Worker) bunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
-	if len(ids) == 0 {
-		return nil
-	}
-	// Update in transaction
-	idsArr := pq.Array(ids)
-	_, err := w.pool.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
-
-	return err
+	return errors.New("TEST")
+	//if len(ids) == 0 {
+	//	return nil
+	//}
+	//
+	//idsArr := pq.Array(ids)
+	//_, err := w.pool.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
+	//
+	//return err
 }
