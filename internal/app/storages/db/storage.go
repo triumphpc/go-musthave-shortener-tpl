@@ -50,6 +50,14 @@ const sqlSelectOriginAndShort = `
 select origin, short from storage.short_links where user_id=$1
 `
 
+// sqlUpdate for set delete flag
+const sqlUpdate = `
+	UPDATE storage.short_links 
+	SET is_deleted=true 
+	WHERE user_id=$1 
+	AND (correlation_id = ANY($2) OR short=ANY($3))
+`
+
 // New New new Storage with not null fields
 func New(c *sql.DB, l *zap.Logger) (*PostgreSQLStorage, error) {
 	// Check if scheme exist
@@ -188,4 +196,15 @@ func (s *PostgreSQLStorage) Clear() error {
 		return err
 	}
 	return nil
+}
+
+// BunchUpdateAsDeleted  update as deleted
+func (s *PostgreSQLStorage) BunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	idsArr := pq.Array(ids)
+	_, err := s.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
+
+	return err
 }

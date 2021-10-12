@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,9 +9,7 @@ import (
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
-	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
@@ -20,47 +17,30 @@ import (
 
 // Repository interface for working with global repository
 // go:generate mockery --name=Repository --inpackage
-type Repository interface {
-	// LinkByShort get original link from all storage
-	LinkByShort(short shortlink.Short) (string, error)
-	// Save link to repository
-	Save(userID user.UniqUser, url string) (shortlink.Short, error)
-	// BunchSave save mass urls and generate shorts
-	BunchSave(userID user.UniqUser, urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
-	// LinksByUser return all user links
-	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
-	// Clear storage
-	Clear() error
-}
+//type Repository interface {
+//	// LinkByShort get original link from all storage
+//	LinkByShort(short shortlink.Short) (string, error)
+//	// Save link to repository
+//	Save(userID user.UniqUser, url string) (shortlink.Short, error)
+//	// BunchSave save mass urls and generate shorts
+//	BunchSave(userID user.UniqUser, urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
+//	// LinksByUser return all user links
+//	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
+//	// Clear storage
+//	Clear() error
+//	// BunchUpdateAsDeleted set flag as deleted
+//	BunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error
+//}
 
 // Handler general type for handler
 type Handler struct {
-	s Repository
+	s repository.Repository
 	l *zap.Logger
 }
 
 // New Allocation new handler
-func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
-	var s Repository
-	var err error
-
-	// Check in db has
-	if c != nil {
-		l.Info("Set db handler")
-		s, err = dbh.New(c, l)
-	} else {
-		l.Info("Set file handler")
-		// File and memory storage
-		s, err = file.New()
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return &Handler{
-		s: s,
-		l: l,
-	}, nil
+func New(l *zap.Logger, s repository.Repository) *Handler {
+	return &Handler{s, l}
 }
 
 // Save convert link to shorting and store in database

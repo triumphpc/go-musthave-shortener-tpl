@@ -1,7 +1,6 @@
 package delete
 
 import (
-	"database/sql"
 	"encoding/json"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
@@ -11,14 +10,13 @@ import (
 )
 
 type Handler struct {
-	db *sql.DB
-	l  *zap.Logger
-	p  *worker.Pool
+	l *zap.Logger
+	p *worker.Pool
 }
 
 // New instance of deleted handler
-func New(db *sql.DB, l *zap.Logger, p *worker.Pool) *Handler {
-	return &Handler{db, l, p}
+func New(l *zap.Logger, p *worker.Pool) *Handler {
+	return &Handler{l, p}
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -2,8 +2,7 @@ package worker
 
 import (
 	"context"
-	"database/sql"
-	"github.com/lib/pq"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"runtime"
@@ -15,16 +14,14 @@ type Pool struct {
 	workerPool []*Worker
 	// Logger
 	logger *zap.Logger
-	// Database object
-	db *sql.DB
 	// Queue for marks as deleted
 	queue *Queue
 	// Waiting group for worker goroutines
 	wg *sync.WaitGroup
 	// Total counter
 	total chan int
-	// Has workers for work
-	isAvail bool
+	// Storage of users
+	storage repository.Repository
 }
 
 type IPool interface {
@@ -45,6 +42,7 @@ type Queue struct {
 	arr  []*Task
 	mu   sync.Mutex
 	cond *sync.Cond
+	stop bool
 }
 
 // Task in queue updating link ids for user id
@@ -53,17 +51,9 @@ type Task struct {
 	userID string
 }
 
-// sqlUpdate for set delete flag
-const sqlUpdate = `
-	UPDATE storage.short_links 
-	SET is_deleted=true 
-	WHERE user_id=$1 
-	AND (correlation_id = ANY($2) OR short=ANY($3))
-`
-
 // New Instance new pool
-func New(ctx context.Context, db *sql.DB, l *zap.Logger) *Pool {
-	p := &Pool{logger: l, db: db}
+func New(ctx context.Context, l *zap.Logger, s repository.Repository) *Pool {
+	p := &Pool{logger: l, storage: s}
 
 	p.logger.Info("Init new worker pool")
 	// Init new worker pool
@@ -88,24 +78,19 @@ func New(ctx context.Context, db *sql.DB, l *zap.Logger) *Pool {
 		}
 		g.Go(f)
 	}
-	p.isAvail = true
-
 	// If we have some error in goroutine
 	go func() {
 		if err := g.Wait(); err != nil {
 			p.logger.Info("Pool error", zap.Error(err))
 		}
 	}()
-
 	// When all goroutines closed
 	go func() {
 		p.wg.Wait()
-		p.isAvail = false
 		close(p.total)
 		// close context
 		cancel()
 	}()
-
 	// monitor for total updates
 	p.total = make(chan int)
 	go func() {
@@ -125,6 +110,7 @@ func (p *Pool) newQueue() *Queue {
 	q := Queue{}
 	// Condition for mutex use
 	q.cond = sync.NewCond(&q.mu)
+	q.stop = false
 	return &q
 }
 
@@ -134,12 +120,26 @@ func (p *Pool) newWorker(id int) *Worker {
 	return &Worker{id, p}
 }
 
+// close pool for clients
+func (q *Queue) close() {
+	q.cond.L.Lock()
+
+	q.stop = true
+
+	// Broadcast that workers must close
+	q.cond.Broadcast()
+	q.cond.L.Unlock()
+
+}
+
 // loop listen for new tasks
 func (w *Worker) loop(ctx context.Context) error {
 	defer func() {
 		w.pool.logger.Info("Close worker", zap.Int("worker id", w.id))
 		// Close counter
 		w.pool.wg.Done()
+		// Close queue
+		w.pool.queue.close()
 
 		select {
 		case <-ctx.Done():
@@ -148,11 +148,15 @@ func (w *Worker) loop(ctx context.Context) error {
 	}()
 
 	for {
-		t := w.pool.queue.PopWait()
+		t, ok := w.pool.queue.PopWait()
+		// Check if pool available
+		if !ok {
+			return nil
+		}
 		// bunch update
 		w.pool.logger.Info("Worker get new task", zap.Int("worker id", w.id))
 
-		if err := w.bunchUpdateAsDeleted(ctx, t.ids, t.userID); err != nil {
+		if err := w.pool.storage.BunchUpdateAsDeleted(ctx, t.ids, t.userID); err != nil {
 			w.pool.logger.Info("Run to out from loop ")
 			return err
 		}
@@ -162,33 +166,43 @@ func (w *Worker) loop(ctx context.Context) error {
 }
 
 // PopWait Get task for update from fanOut
-func (q *Queue) PopWait() *Task {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+func (q *Queue) PopWait() (*Task, bool) {
+	q.cond.L.Lock()
 
-	for len(q.arr) == 0 {
+	for len(q.arr) == 0 && !q.stop {
 		// Goroutines to sleep
 		// After awake again take mutex
 		q.cond.Wait()
 	}
+
+	if q.stop {
+		q.cond.L.Unlock()
+		return nil, false
+	}
+
+	// If pool is available
 	t := q.arr[0]
 	q.arr = q.arr[1:]
 
-	return t
+	q.cond.L.Unlock()
+
+	return t, true
 }
 
 // Push lock all goroutines for push task in queue
 func (p *Pool) Push(ids []string, userID string) bool {
 	// Check if workers has
-	if !p.isAvail {
+	if p.queue.stop {
 		return false
 	}
+
+	// Lock input queue
+	p.queue.cond.L.Lock()
+	defer p.queue.cond.L.Unlock()
+
 	p.logger.Info("Push new task in queue")
 	// New Task for updating
 	t := Task{ids, userID}
-	// Lock input queue
-	p.queue.mu.Lock()
-	defer p.queue.mu.Unlock()
 	// Add to queue new Task for update
 	p.queue.arr = append(p.queue.arr, &t)
 	//awake PopWait in worker
@@ -196,14 +210,14 @@ func (p *Pool) Push(ids []string, userID string) bool {
 	return true
 }
 
-// bunchUpdateAsDeleted  update as deleted
-func (w *Worker) bunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
-	if len(ids) == 0 {
-		return nil
-	}
-
-	idsArr := pq.Array(ids)
-	_, err := w.pool.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
-
-	return err
-}
+//// bunchUpdateAsDeleted  update as deleted
+//func (w *Worker) bunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
+//	if len(ids) == 0 {
+//		return nil
+//	}
+//
+//	idsArr := pq.Array(ids)
+//	_, err := w.pool.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
+//
+//	return err
+//}

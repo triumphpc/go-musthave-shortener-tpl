@@ -1,10 +1,18 @@
 package configs
 
 import (
+	"database/sql"
 	"errors"
 	"flag"
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
+	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
+	"go.uber.org/zap"
+	"log"
 )
 
 var ErrUnknownParam = errors.New("unknown param")
@@ -15,6 +23,9 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"unknown"`
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
+	Storage         repository.Repository
+	Logger          *zap.Logger
+	Database        *sql.DB
 }
 
 const (
@@ -41,6 +52,41 @@ func Instance() *Config {
 		instance = new(Config)
 		instance.initInv()
 		instance.init()
+		// Init logger
+		l, err := logger.New()
+		if err != nil {
+			log.Fatal(err)
+		}
+		instance.Logger = l
+		// Database
+		dsn, _ := instance.Param(DatabaseDsn)
+		var dbc *sql.DB
+		err = nil
+		if dsn != "" {
+			dbc, err = db.New(l, dsn)
+			if err != nil {
+				l.Info("Db error", zap.Error(err))
+			}
+		}
+		// Main handler
+		if dsn != "" && err == nil {
+			l.Info("Set db handler")
+			instance.Storage, err = dbh.New(dbc, l)
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			l.Info("Set file handler")
+			// File and memory storage
+			fs, err := instance.Param(FileStoragePath)
+			if err != nil || fs == FileStoragePathDefault {
+				fs = ""
+			}
+			instance.Storage, err = file.New(fs)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 	return instance
 }
@@ -73,7 +119,7 @@ func (c *Config) init() {
 	bu := flag.String(mapVarToInv[BaseURL], "", "")
 	sa := flag.String(mapVarToInv[ServerAddress], "", "")
 	fs := flag.String(mapVarToInv[FileStoragePath], "", "")
-	db := flag.String(mapVarToInv[DatabaseDsn], "", "")
+	dbDSN := flag.String(mapVarToInv[DatabaseDsn], "", "")
 	flag.Parse()
 
 	if *bu != "" {
@@ -85,7 +131,7 @@ func (c *Config) init() {
 	if *fs != "" {
 		c.FileStoragePath = *fs
 	}
-	if *db != "" {
-		c.DatabaseDsn = *db
+	if *dbDSN != "" {
+		c.DatabaseDsn = *dbDSN
 	}
 }
