@@ -66,6 +66,8 @@ func Instance() *Config {
 			dbc, err = db.New(l, dsn)
 			if err != nil {
 				l.Info("Db error", zap.Error(err))
+			} else {
+				instance.Database = dbc
 			}
 		}
 		// Main handler
