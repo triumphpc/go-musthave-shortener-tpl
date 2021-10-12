@@ -52,7 +52,7 @@ type Task struct {
 }
 
 // New Instance new pool
-func New(ctx context.Context, l *zap.Logger, s repository.Repository) *Pool {
+func New(ctx context.Context, l *zap.Logger, s repository.Repository) (*Pool, func()) {
 	p := &Pool{logger: l, storage: s}
 
 	p.logger.Info("Init new worker pool")
@@ -102,7 +102,7 @@ func New(ctx context.Context, l *zap.Logger, s repository.Repository) *Pool {
 		p.logger.Info("Total updated", zap.Int("count", total))
 	}()
 
-	return p
+	return p, p.Close
 }
 
 // newQueue Init new queue for workers
@@ -120,16 +120,18 @@ func (p *Pool) newWorker(id int) *Worker {
 	return &Worker{id, p}
 }
 
+// Close grace shutdown handler
+func (p *Pool) Close() {
+	p.queue.close()
+}
+
 // close pool for clients
 func (q *Queue) close() {
 	q.cond.L.Lock()
-
 	q.stop = true
-
 	// Broadcast that workers must close
 	q.cond.Broadcast()
 	q.cond.L.Unlock()
-
 }
 
 // loop listen for new tasks
@@ -142,7 +144,7 @@ func (w *Worker) loop(ctx context.Context) error {
 		w.pool.queue.close()
 
 		<-ctx.Done()
-		w.pool.logger.Info("Aborting from ctx")
+		w.pool.logger.Info("Aborting from ctx", zap.Int("worker id", w.id))
 	}()
 
 	for {

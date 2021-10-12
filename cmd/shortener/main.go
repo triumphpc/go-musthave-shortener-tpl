@@ -23,15 +23,10 @@ func main() {
 	// Worker for background tasks
 	ctx := context.Background()
 	// Pool workers
-	p := worker.New(ctx, c.Logger, c.Storage)
+	p, poolClose := worker.New(ctx, c.Logger, c.Storage)
 	// Init routes
 	rtr := routes.Router(h, c, p)
 	http.Handle("/", rtr)
-
-	// Context with cancel func
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
 	// Get base URL
 	serverAddress, err := c.Param(configs.ServerAddress)
 	if err != nil {
@@ -48,11 +43,20 @@ func main() {
 			middlewares.New(c.Logger).CookieMiddleware,
 		),
 	}
-	// Goroutine
+	// Goroutine to run server
 	go func() {
-		c.Logger.Fatal("app error exit", zap.Error(srv.ListenAndServe()))
+		c.Logger.Info("app error exit", zap.Error(srv.ListenAndServe()))
 	}()
 	c.Logger.Info("The service is ready to listen and serve.")
+
+	// Shut down handler
+	shutDownServer(ctx, c, srv, poolClose)
+}
+
+func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
+	// Context with cancel func
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	// Add context for Graceful shutdown
 	killSignal := <-interrupt
@@ -63,6 +67,7 @@ func main() {
 		c.Logger.Info("Got SIGTERM...")
 	}
 
+	c.Logger.Info("The service is shutting down...")
 	// database close
 	if c.Database != nil {
 		c.Logger.Info("Closing connect to db")
@@ -71,10 +76,11 @@ func main() {
 			c.Logger.Info("Closing don't close")
 		}
 	}
-
-	c.Logger.Info("The service is shutting down...")
-	if err = srv.Shutdown(ctx); err != nil {
-		c.Logger.Fatal("app error exit", zap.Error(err))
+	// Close pool worker
+	poolClose()
+	// Server shutdown
+	if err := srv.Shutdown(ctx); err != nil {
+		c.Logger.Info("app error exit", zap.Error(err))
 	}
 	c.Logger.Info("Done")
 }

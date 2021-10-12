@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -200,11 +201,12 @@ func (s *PostgreSQLStorage) Clear() error {
 
 // BunchUpdateAsDeleted  update as deleted
 func (s *PostgreSQLStorage) BunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
-	if len(ids) == 0 {
-		return nil
-	}
-	idsArr := pq.Array(ids)
-	_, err := s.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
-
-	return err
+	return errors.New("TEST")
+	//if len(ids) == 0 {
+	//	return nil
+	//}
+	//idsArr := pq.Array(ids)
+	//_, err := s.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
+	//
+	//return err
 }
