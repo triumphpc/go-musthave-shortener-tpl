@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -171,7 +170,6 @@ func (s *PostgreSQLStorage) BunchSave(userID user.UniqUser, urls []shortlink.URL
 			s.l.Info("Close statement error", zap.Error(err))
 		}
 	}(stmt)
-
 	for _, v := range buffer {
 		// Add record to transaction
 		if _, err = stmt.ExecContext(context.Background(), userID, v.Origin, v.Short, v.ID); err == nil {
@@ -201,12 +199,11 @@ func (s *PostgreSQLStorage) Clear() error {
 
 // BunchUpdateAsDeleted  update as deleted
 func (s *PostgreSQLStorage) BunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
-	return errors.New("TEST")
-	//if len(ids) == 0 {
-	//	return nil
-	//}
-	//idsArr := pq.Array(ids)
-	//_, err := s.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
-	//
-	//return err
+	if len(ids) == 0 {
+		return nil
+	}
+	idsArr := pq.Array(ids)
+	_, err := s.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
+
+	return err
 }
