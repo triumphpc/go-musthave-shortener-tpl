@@ -141,10 +141,8 @@ func (w *Worker) loop(ctx context.Context) error {
 		// Close queue
 		w.pool.queue.close()
 
-		select {
-		case <-ctx.Done():
-			w.pool.logger.Info("Aborting from ctx")
-		}
+		<-ctx.Done()
+		w.pool.logger.Info("Aborting from ctx")
 	}()
 
 	for {

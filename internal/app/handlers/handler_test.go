@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
 	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
@@ -14,10 +16,13 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	h, err := New(nil, zap.NewNop())
+	rep, err := file.New("")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println(rep)
+	h := New(zap.NewNop(), rep)
 
 	type want struct {
 		code        int
