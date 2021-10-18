@@ -6,12 +6,14 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/mypool"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
 	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
+	"sync"
 	"syscall"
 )
 
@@ -21,11 +23,25 @@ func main() {
 	// Allocation handler and storage
 	h := handlers.New(c.Logger, c.Storage)
 	// Worker for background tasks
-	ctx := context.Background()
-	// Pool workers
-	p, poolClose := worker.New(ctx, c.Logger, c.Storage)
+	ctx, cancel := context.WithCancel(context.Background())
+	//// Pool workers
+	//p, poolClose := worker.New(ctx, c.Logger, c.Storage)
+
+	pool := mypool.New(c.Logger, 1000)
+
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := pool.Run(ctx, runtime.NumCPU()); err != nil {
+			c.Logger.Error("Worker pool returned error", zap.Error(err))
+			cancel()
+		}
+	}()
+
 	// Init routes
-	rtr := routes.Router(h, c, p)
+	rtr := routes.Router(h, c, pool, c.Storage)
 	http.Handle("/", rtr)
 	// Get base URL
 	serverAddress, err := c.Param(configs.ServerAddress)
@@ -49,23 +65,23 @@ func main() {
 	}()
 	c.Logger.Info("The service is ready to listen and serve.")
 
-	// Shut down handler
-	shutDownServer(ctx, c, srv, poolClose)
-}
-
-func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
 	// Context with cancel func
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	// Add context for Graceful shutdown
-	killSignal := <-interrupt
-	switch killSignal {
-	case os.Interrupt:
-		c.Logger.Info("Got SIGINT...")
-	case syscall.SIGTERM:
-		c.Logger.Info("Got SIGTERM...")
+	select {
+	case killSignal := <-interrupt:
+		switch killSignal {
+		case os.Interrupt:
+			c.Logger.Info("Got SIGINT...")
+		case syscall.SIGTERM:
+			c.Logger.Info("Got SIGTERM...")
+		}
+	case <-ctx.Done():
 	}
+
+	cancel()
 
 	c.Logger.Info("The service is shutting down...")
 	// database close
@@ -76,11 +92,12 @@ func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, po
 			c.Logger.Info("Closing don't close")
 		}
 	}
-	// Close pool worker
-	poolClose()
 	// Server shutdown
 	if err := srv.Shutdown(ctx); err != nil {
 		c.Logger.Info("app error exit", zap.Error(err))
 	}
+
+	wg.Wait()
+
 	c.Logger.Info("Done")
 }

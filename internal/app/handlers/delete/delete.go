@@ -1,22 +1,25 @@
 package delete
 
 import (
+	"context"
 	"encoding/json"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/mypool"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
 	"go.uber.org/zap"
 	"net/http"
 )
 
 type Handler struct {
-	l *zap.Logger
-	p *worker.Pool
+	l       *zap.Logger
+	e       mypool.Executor
+	storage repository.Repository
 }
 
 // New instance of deleted handler
-func New(l *zap.Logger, p *worker.Pool) *Handler {
-	return &Handler{l, p}
+func New(l *zap.Logger, e mypool.Executor, storage repository.Repository) *Handler {
+	return &Handler{l, e, storage}
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -39,8 +42,13 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// Add to pool ids on delete
 	userID := helpers.GetContextUserID(r)
-	if !h.p.Push(linkIDs, string(userID)) {
-		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
+
+	err = h.e.Push(func(ctx context.Context) error {
+		return h.storage.BunchUpdateAsDeleted(ctx, linkIDs, string(userID))
+	})
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else {
 		w.WriteHeader(http.StatusAccepted)
 	}
