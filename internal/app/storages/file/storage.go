@@ -1,8 +1,8 @@
 package file
 
 import (
+	"context"
 	"errors"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
@@ -14,13 +14,15 @@ var ErrURLNotFound = errors.New("url not found")
 
 // UserStorage for file storage
 type UserStorage struct {
-	data map[user.UniqUser]shortlink.ShortLinks
+	data            map[user.UniqUser]shortlink.ShortLinks
+	fileStoragePath string
 }
 
 // New Instance new Storage with not null fields
-func New() (*UserStorage, error) {
+func New(fileStoragePath string) (*UserStorage, error) {
 	s := &UserStorage{
-		data: make(map[user.UniqUser]shortlink.ShortLinks),
+		data:            make(map[user.UniqUser]shortlink.ShortLinks),
+		fileStoragePath: fileStoragePath,
 	}
 	// Load from file storage
 	if err := s.Load(); err != nil {
@@ -64,29 +66,36 @@ func (s *UserStorage) Save(userID user.UniqUser, url string) (shortlink.Short, e
 	s.data[userID] = currentUrls
 	s.data["all"] = currentUrls
 	// Save to file storage
-	fs, err := configs.Instance().Param(configs.FileStoragePath)
-	if err != nil || fs == configs.FileStoragePathDefault {
+	if s.fileStoragePath == "" {
 		return short, nil
 	}
-	_ = fw.Write(fs, s.data)
+	_ = fw.Write(s.fileStoragePath, s.data)
 	return short, nil
 }
 
 // Load all links to map
 func (s *UserStorage) Load() error {
-	fs, err := configs.Instance().Param(configs.FileStoragePath)
 	// If file storage not exists
-	if err != nil || fs == configs.FileStoragePathDefault {
+	if s.fileStoragePath == "" {
 		return nil
 	}
-	if err := fw.Read(fs, &s.data); err != nil {
+	if err := fw.Read(s.fileStoragePath, &s.data); err != nil {
 		return err
 	}
 	return nil
 }
 
 // BunchSave save mass urls
-func (s *UserStorage) BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
+func (s *UserStorage) BunchSave(userID user.UniqUser, urls []shortlink.URLs) ([]shortlink.ShortURLs, error) {
 	var shorts []shortlink.ShortURLs
 	return shorts, nil
+}
+
+// Clear database
+func (s *UserStorage) Clear() error {
+	return nil
+}
+
+func (s *UserStorage) BunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
+	return nil
 }

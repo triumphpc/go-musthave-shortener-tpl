@@ -4,7 +4,13 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
+	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"time"
 )
 
 // encKey rand key
@@ -16,18 +22,22 @@ type encData struct {
 // encInstance save encrypt data
 var encInstance *encData
 
-// Returns an int >= min, < max
-func randomInt(min, max int) int {
-	return min + rand.Intn(max-min)
+const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
+
+var seededRand *rand.Rand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+func stringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
 }
 
-// RandomString Generate a random string of A-Z chars with len = l
-func RandomString(len int) string {
-	bytes := make([]byte, len)
-	for i := 0; i < len; i++ {
-		bytes[i] = byte(randomInt(65, 90))
-	}
-	return string(bytes)
+// RandomString Get rand string
+func RandomString(length int) string {
+	return stringWithCharset(length, charset)
 }
 
 // Decode userId  from encrypted cookie
@@ -103,4 +113,30 @@ func keyInit() error {
 		encInstance.nonce = nonce
 	}
 	return nil
+}
+
+// BodyFromJSON get bytes from JSON requests
+func BodyFromJSON(w *http.ResponseWriter, r *http.Request) ([]byte, error) {
+	var body []byte
+	if r.Body == http.NoBody {
+		http.Error(*w, er.ErrBadResponse.Error(), http.StatusBadRequest)
+		return body, er.ErrBadResponse
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(*w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
+		return body, er.ErrUnknownURL
+	}
+	return body, nil
+}
+
+// GetContextUserID return uniq user id from session
+func GetContextUserID(r *http.Request) user.UniqUser {
+	userIDCtx := r.Context().Value(consts.UserIDCtxName)
+	userID := "all"
+	if userIDCtx != nil {
+		// Convert interface type to user.UniqUser
+		userID = userIDCtx.(string)
+	}
+	return user.UniqUser(userID)
 }

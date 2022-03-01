@@ -10,15 +10,52 @@ services:
       - "8080:8080"
     depends_on:
       - postgre_service
+#      - goose_service
+    environment:
+      - DATABASE_DSN=postgres://postgres:qwerty@postgre_service:5436/postgres?sslmode=disable
+
+  # docker-compose run --rm goose_service - run goose service container
+  # docker-compose up -d --build goose_service - rebuild goose container
+#  goose_service:
+#    build:
+#      context: .
+#      dockerfile: dockerfiles/goose_service.dockerfile
+#    depends_on:
+#      - postgre_service
 #    environment:
-#      - DATABASE_DSN=postgres://postgres:qwerty@postgre_service:5436/postgres?sslmode=disable
+#      - DBHOST=postgre_service
+#      - DBNAME=postgres
+#      - DBUSER=postgres
+#      - DBPASSWORD=qwerty
+#      - DBSSL=disable
+
+  # docker-compose up -d --build goose_exec_service - rebuild goose container
+  # docker-compose run --rm goose_exec_service create link_storage sql - create new migrations
+  goose_exec_service:
+    build:
+      context: .
+      dockerfile: dockerfiles/goose_service_exec.dockerfile
+    depends_on:
+      - postgre_service
+    environment:
+      - DBHOST=postgre_service
+      - DBNAME=postgres
+      - DBUSER=postgres
+      - DBPASSWORD=qwerty
+      - DBSSL=disable
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: [ "bash", "entrypoint_exec.sh" ]
 
   postgre_service:
     restart: always
     image: postgres:latest
+    container_name: postgres_db
     volumes:
       - ./db/postgres/data:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=qwerty
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
     ports:
-      - "5436:5432"
+      - "5432:5432"

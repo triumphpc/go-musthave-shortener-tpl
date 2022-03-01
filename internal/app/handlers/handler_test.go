@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
 	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
@@ -14,10 +16,13 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	h, err := New(nil, zap.NewNop())
+	rep, err := file.New("")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println(rep)
+	h := New(zap.NewNop(), rep)
 
 	type want struct {
 		code        int
@@ -32,7 +37,6 @@ func TestHandler(t *testing.T) {
 		path       string
 		saveParam  bool
 		checkParam bool
-		//mock       *mocks.Repository
 	}
 
 	// Structure of tests
@@ -43,6 +47,19 @@ func TestHandler(t *testing.T) {
 		handler func(w http.ResponseWriter, r *http.Request)
 	}{
 		// implement all tests
+		{
+			name:    "Test increment #9",
+			handler: h.GetUrls,
+			request: request{
+				method: http.MethodGet,
+				target: "/user/urls",
+				path:   "/user/urls",
+			},
+			want: want{
+				code:        http.StatusNoContent,
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
 		{
 			name:    "Test Save handler #1",
 			handler: h.Save,
@@ -141,33 +158,15 @@ func TestHandler(t *testing.T) {
 				method:     http.MethodPost,
 				target:     "/",
 				path:       "/",
-				body:       "{\"url\": \"vvvvvvvv\"}",
+				body:       "{\"url\": \"http://test.ru\"}",
 				saveParam:  false,
 				checkParam: true,
 			},
 			want: want{
 				code:        http.StatusCreated,
-				response:    "{\"result\":\"http://localhost:8080/TLMODYLUMG\"}",
 				contentType: "application/json; charset=utf-8",
 			},
 		},
-		//{
-		//	name:    "Test Save handler with mock storage #1",
-		//	handler: h.Save,
-		//	request: request{
-		//		method:    http.MethodPost,
-		//		target:    "/",
-		//		path:      "/",
-		//		body:      "http://newlink.ru",
-		//		saveParam: true,
-		//		mock:      mock,
-		//	},
-		//	want: want{
-		//		code:        http.StatusCreated,
-		//		response:    "",
-		//		contentType: "text/plain; charset=utf-8",
-		//	},
-		//},
 	}
 
 	type lastParams struct {
@@ -192,11 +191,6 @@ func TestHandler(t *testing.T) {
 					tt.request.target = lp.shortLink
 				}
 			}
-
-			// mock storage
-			//if tt.request.mock != nil {
-			//	h.SetRepository(tt.request.mock)
-			//}
 
 			request := httptest.NewRequest(tt.request.method, tt.request.target, r)
 

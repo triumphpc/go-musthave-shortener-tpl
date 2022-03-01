@@ -1,98 +1,52 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
+	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
-	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 )
 
-// ErrBadResponse Package level error
-var ErrBadResponse = errors.New("bad request")
-var ErrUnknownURL = errors.New("unknown url")
-var ErrInternalError = errors.New("internal error")
-var ErrNoContent = errors.New("no content")
-
-// Repository interface for working with global repository
-// go:generate mockery --name=Repository --inpackage
-type Repository interface {
-	// LinkByShort get original link from all storage
-	LinkByShort(short shortlink.Short) (string, error)
-	// Save link to repository
-	Save(userID user.UniqUser, url string) (shortlink.Short, error)
-	// BunchSave save mass urls and generate shorts
-	BunchSave(urls []shortlink.URLs) ([]shortlink.ShortURLs, error)
-	// LinksByUser return all user links
-	LinksByUser(userID user.UniqUser) (shortlink.ShortLinks, error)
-}
-
 // Handler general type for handler
 type Handler struct {
-	s Repository
+	s repository.Repository
 	l *zap.Logger
 }
 
 // New Allocation new handler
-func New(c *sql.DB, l *zap.Logger) (*Handler, error) {
-	// Check in db has
-	if c != nil {
-		l.Info("Set db handler")
-		s, err := dbh.New(c, l)
-		if err != nil {
-			return nil, err
-		}
-		return &Handler{
-			s: s,
-			l: l,
-		}, nil
-	} else {
-		l.Info("Set file handler")
-		// File and memory storage
-		s, err := file.New()
-		if err != nil {
-			return nil, err
-		}
-		return &Handler{
-			s: s,
-			l: l,
-		}, nil
-	}
+func New(l *zap.Logger, s repository.Repository) *Handler {
+	return &Handler{s, l}
 }
 
 // Save convert link to shorting and store in database
 func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
+	h.l.Info("Save run")
 	if r.Body == http.NoBody {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 
 	}
 	origin := string(body)
-	// Get userID from context
-	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-	userID := "default"
-	if userIDCtx != nil {
-		// Convert interface type to user.UniqUser
-		userID = userIDCtx.(string)
-	}
-	short, err := h.s.Save(user.UniqUser(userID), origin)
+
+	h.l.Info("Save origin", zap.String("origin", origin))
+
+	short, err := h.s.Save(helpers.GetContextUserID(r), origin)
 	status := http.StatusCreated
-	if errors.Is(err, dbh.ErrAlreadyHasShort) {
+	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
 	}
 	// Prepare response
@@ -101,21 +55,22 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	slURL := fmt.Sprintf("%s/%s", baseURL, short)
 	_, err = w.Write([]byte(slURL))
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 	}
 }
 
 // SaveJSON convert link to shorting and store in database
 func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
-	body, err := bodyFromJSON(&w, r)
+	h.l.Info("SaveJSON run")
+	body, err := helpers.BodyFromJSON(&w, r)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
 	// Get url from json data
@@ -123,27 +78,24 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &url)
 
 	if err != nil {
-		http.Error(w, ErrUnknownURL.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
 	if url.URL == "" {
-		http.Error(w, ErrUnknownURL.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-	userID := "default"
-	if userIDCtx != nil {
-		// Convert interface type to user.UniqUser
-		userID = userIDCtx.(string)
-	}
-	short, err := h.s.Save(user.UniqUser(userID), url.URL)
+
+	h.l.Info("save origin", zap.String("URL", url.URL))
+
+	short, err := h.s.Save(helpers.GetContextUserID(r), url.URL)
 	status := http.StatusCreated
-	if errors.Is(err, dbh.ErrAlreadyHasShort) {
+	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
 	}
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	slURL := fmt.Sprintf("%s/%s", baseURL, string(short))
@@ -151,45 +103,49 @@ func (h *Handler) SaveJSON(w http.ResponseWriter, r *http.Request) {
 		Result string `json:"result"`
 	}{Result: slURL}
 
-	// log to stdout
 	h.l.Info("save to json format", zap.Reflect("URL", result))
 	body, err = json.Marshal(result)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
+
+	h.l.Info("prepare response")
 	// Prepare response
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	_, err = w.Write(body)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		h.l.Info("base status request")
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 	}
 }
 
 // BunchSaveJSON save data and return from mass
 func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
-	body, err := bodyFromJSON(&w, r)
+	h.l.Info("BunchSaveJSON run")
+	body, err := helpers.BodyFromJSON(&w, r)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
 	// Get url from json data
 	var urls []shortlink.URLs
 	err = json.Unmarshal(body, &urls)
 	if err != nil {
-		http.Error(w, ErrUnknownURL.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrUnknownURL.Error(), http.StatusBadRequest)
 		return
 	}
-	shorts, err := h.s.BunchSave(urls)
+
+	shorts, err := h.s.BunchSave(helpers.GetContextUserID(r), urls)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 	}
 	// Determine base url
 	baseURL, err := configs.Instance().Param(configs.BaseURL)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	// Prepare results
@@ -198,7 +154,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err = json.Marshal(shorts)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 		return
 
 	}
@@ -207,52 +163,49 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	_, err = w.Write(body)
 	if err != nil {
-		http.Error(w, ErrInternalError.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)
 	}
-}
-
-// bodyFromJSON get bytes from JSON requests
-func bodyFromJSON(w *http.ResponseWriter, r *http.Request) ([]byte, error) {
-	var body []byte
-	if r.Body == http.NoBody {
-		http.Error(*w, ErrBadResponse.Error(), http.StatusBadRequest)
-		return body, ErrBadResponse
-	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(*w, ErrUnknownURL.Error(), http.StatusBadRequest)
-		return body, ErrUnknownURL
-	}
-	return body, nil
 }
 
 // Get fid origin link from storage
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	h.l.Info("Get run")
 	// Validation id params
 	params := mux.Vars(r)
 	id := params["id"]
 
 	if id == "" {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
+	h.l.Info("Get id:", zap.String("id", id))
 	url, err := h.s.LinkByShort(shortlink.Short(id))
+
+	h.l.Info("Result err", zap.Error(err))
+	h.l.Info("Result url", zap.String("url", url))
+
 	if err != nil {
+		if errors.Is(err, er.ErrURLIsGone) {
+			h.l.Info("Get error is gone", zap.Error(err))
+			http.Error(w, er.ErrURLIsGone.Error(), http.StatusGone)
+			return
+		}
+
 		h.l.Info("Get error", zap.Error(err))
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
+	h.l.Info("redirect")
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 // GetUrls all urls from user
 func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
-	userIDCtx := r.Context().Value(middlewares.UserIDCtxName)
-	// Convert interface type to user.UniqUser
-	userID := userIDCtx.(string)
-	links, err := h.s.LinksByUser(user.UniqUser(userID))
-	if err != nil {
-		http.Error(w, ErrNoContent.Error(), http.StatusNoContent)
+	h.l.Info("GetUrls run")
+	links, err := h.s.LinksByUser(helpers.GetContextUserID(r))
+
+	if err != nil || len(links) == 0 {
+		http.Error(w, er.ErrNoContent.Error(), http.StatusNoContent)
 		return
 	}
 
@@ -270,9 +223,11 @@ func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 			Origin: v,
 		})
 	}
+	h.l.Info("User links", zap.Reflect("links", lks))
+
 	body, err := json.Marshal(lks)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 		return
 	}
 	// Prepare response
@@ -280,6 +235,6 @@ func (h *Handler) GetUrls(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(body)
 	if err != nil {
-		http.Error(w, ErrBadResponse.Error(), http.StatusBadRequest)
+		http.Error(w, er.ErrBadResponse.Error(), http.StatusBadRequest)
 	}
 }
