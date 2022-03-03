@@ -10,6 +10,7 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
 	"go.uber.org/zap"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
