@@ -1,3 +1,5 @@
+// Package ping implement handler for ping requests. Route /ping
+
 package ping
 
 import (
