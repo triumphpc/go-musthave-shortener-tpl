@@ -2,8 +2,9 @@ package ping
 
 import (
 	"database/sql"
-	"go.uber.org/zap"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type Handler struct {

@@ -2,11 +2,13 @@ package worker
 
 import (
 	"context"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
+
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
 )
 
 type Pool struct {

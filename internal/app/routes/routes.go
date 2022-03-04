@@ -1,13 +1,15 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/gorilla/mux"
+
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/delete"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/ping"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
-	"net/http"
 )
 
 // Router define routes priority

@@ -4,13 +4,14 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
-	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
+	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 )
 
 // encKey rand key

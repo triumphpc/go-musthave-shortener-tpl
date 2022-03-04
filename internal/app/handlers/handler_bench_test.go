@@ -6,14 +6,16 @@
 package handlers
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
+
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 )
 
 func BenchmarkHandler_Save(b *testing.B) {

@@ -2,18 +2,20 @@ package main
 
 import (
 	"context"
-	_ "github.com/lib/pq"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
-	"go.uber.org/zap"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
+
+	_ "github.com/lib/pq"
+	"go.uber.org/zap"
+
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
 )
 
 func main() {

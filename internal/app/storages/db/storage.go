@@ -3,15 +3,17 @@ package db
 import (
 	"context"
 	"database/sql"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
+	"go.uber.org/zap"
+
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	"github.com/triumphpc/go-musthave-shortener-tpl/migrations"
-	"go.uber.org/zap"
 )
 
 // PostgreSQLStorage storage
