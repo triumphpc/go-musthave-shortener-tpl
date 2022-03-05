@@ -1,3 +1,4 @@
+// Package file contain methods for file storage
 package file
 
 import (

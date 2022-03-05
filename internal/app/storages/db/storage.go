@@ -1,3 +1,4 @@
+// Package db contain methods for postgreSQL storage work
 package db
 
 import (

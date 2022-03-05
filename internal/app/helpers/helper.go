@@ -1,3 +1,4 @@
+// Package helpers contain internal parts of general project logic
 package helpers
 
 import (
@@ -28,6 +29,7 @@ const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
 var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
+// stringWithCharset generate rand string from charset
 func stringWithCharset(length int, charset string) string {
 	b := make([]byte, length)
 	for i := range b {

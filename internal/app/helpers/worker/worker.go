@@ -1,3 +1,4 @@
+// Package worker contain logic for works pool
 package worker
 
 import (

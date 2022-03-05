@@ -1,3 +1,4 @@
+// Package routes contain general routes for service shortener
 package routes
 
 import (
