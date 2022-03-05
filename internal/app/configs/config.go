@@ -1,3 +1,4 @@
+// Package configs implement functions for environment and project configs
 package configs
 
 import (
@@ -17,6 +18,7 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
 )
 
+// ErrUnknownParam error for unknown param
 var ErrUnknownParam = errors.New("unknown param")
 
 // Config project

@@ -43,7 +43,7 @@ func main() {
 		// Send request to conveyor example
 		Handler: middlewares.Conveyor(
 			rtr, middlewares.NewCompressor(c.Logger).GzipMiddleware,
-			middlewares.New(c.Logger).CookieMiddleware,
+			middlewares.NewCookie(c.Logger).CookieMiddleware,
 		),
 	}
 	// Goroutine to run server

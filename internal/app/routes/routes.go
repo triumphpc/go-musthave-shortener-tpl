@@ -22,7 +22,7 @@ func Router(h *handlers.Handler, c *configs.Config, p *worker.Pool) *mux.Router 
 	// Get user session links in JSON
 	rtr.HandleFunc("/user/urls", h.GetUrls).Methods(http.MethodGet)
 	// Ping db connection
-	rtr.Handle("/ping", ping.New(c.Database, c.Logger)).Methods(http.MethodGet)
+	rtr.Handle("/ping", ping.NewPing(c.Database, c.Logger)).Methods(http.MethodGet)
 	// Delete links session
 	rtr.Handle("/api/user/urls", delete.New(c.Logger, p)).Methods(http.MethodDelete)
 	// Get origin by short link

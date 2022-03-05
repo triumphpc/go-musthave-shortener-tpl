@@ -1,3 +1,4 @@
+// Package middlewares consist methods for parse http request
 package middlewares
 
 import (
@@ -19,6 +20,7 @@ type CompressorMw struct {
 	l *zap.Logger
 }
 
+// NewCompressor allocate CompressorMw type model
 func NewCompressor(l *zap.Logger) *CompressorMw {
 	return &CompressorMw{l: l}
 }
@@ -63,6 +65,7 @@ func (h CompressorMw) GzipMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// Write http response by gzip
 func (w gzipWriter) Write(b []byte) (int, error) {
 	// Writer response by gzip
 	return w.Writer.Write(b)
