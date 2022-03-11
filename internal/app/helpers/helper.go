@@ -1,16 +1,18 @@
+// Package helpers contain internal parts of general project logic
 package helpers
 
 import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
-	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
-	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
+	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 )
 
 // encKey rand key
@@ -27,6 +29,7 @@ const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
 var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
+// stringWithCharset generate rand string from charset
 func stringWithCharset(length int, charset string) string {
 	b := make([]byte, length)
 	for i := range b {

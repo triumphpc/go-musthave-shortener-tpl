@@ -4,11 +4,13 @@ package middlewares
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/google/uuid"
+	"go.uber.org/zap"
+
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
-	"go.uber.org/zap"
-	"net/http"
 )
 
 type CookieMw struct {
@@ -16,7 +18,8 @@ type CookieMw struct {
 	l *zap.Logger
 }
 
-func New(l *zap.Logger) *CookieMw {
+// NewCookie allocate CookieMw struct
+func NewCookie(l *zap.Logger) *CookieMw {
 	return &CookieMw{l: l}
 }
 

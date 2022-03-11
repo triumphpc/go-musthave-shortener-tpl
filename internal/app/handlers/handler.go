@@ -1,18 +1,21 @@
+// Package handlers include general handlers for service shortener
 package handlers
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
+
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
-	"go.uber.org/zap"
-	"io/ioutil"
-	"net/http"
 )
 
 // Handler general type for handler

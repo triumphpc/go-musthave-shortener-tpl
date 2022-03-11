@@ -1,3 +1,4 @@
+// Package shortlink contain types for short link
 package shortlink
 
 // ShortLinks maps original and shorts

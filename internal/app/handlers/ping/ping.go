@@ -1,20 +1,25 @@
+// Package ping implement handler for ping requests. Route /ping
 package ping
 
 import (
 	"database/sql"
-	"go.uber.org/zap"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
+// Handler struct
 type Handler struct {
 	db *sql.DB
 	l  *zap.Logger
 }
 
-func New(db *sql.DB, l *zap.Logger) *Handler {
+// NewPing implement ping handler
+func NewPing(db *sql.DB, l *zap.Logger) *Handler {
 	return &Handler{db, l}
 }
 
+// ServeHTTP implement logic for ping hadler
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.PingContext(r.Context()); err == nil {
 		w.WriteHeader(http.StatusOK)

@@ -1,7 +1,9 @@
+// Package repository implement interface for Repository
 package repository
 
 import (
 	"context"
+
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/shortlink"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/models/user"
 )

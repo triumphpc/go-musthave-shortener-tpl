@@ -1,20 +1,24 @@
+// Package configs implement functions for environment and project configs
 package configs
 
 import (
 	"database/sql"
 	"errors"
 	"flag"
+	"log"
+
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
+	"go.uber.org/zap"
+
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
 	dbh "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/repository"
-	"go.uber.org/zap"
-	"log"
 )
 
+// ErrUnknownParam error for unknown param
 var ErrUnknownParam = errors.New("unknown param")
 
 // Config project

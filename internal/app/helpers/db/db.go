@@ -1,8 +1,10 @@
+// Package db consist function for work with database connection objects
 package db
 
 import (
 	"context"
 	"database/sql"
+
 	"go.uber.org/zap"
 )
 

@@ -1,12 +1,15 @@
+// Package delete implement handler for delete links for route /api/user/urls
 package delete
 
 import (
 	"encoding/json"
+	"net/http"
+
+	"go.uber.org/zap"
+
 	er "github.com/triumphpc/go-musthave-shortener-tpl/internal/app/errors"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
-	"go.uber.org/zap"
-	"net/http"
 )
 
 type Handler struct {

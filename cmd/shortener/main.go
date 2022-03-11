@@ -2,17 +2,20 @@ package main
 
 import (
 	"context"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
+
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
+
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
-	"go.uber.org/zap"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func main() {
@@ -40,7 +43,7 @@ func main() {
 		// Send request to conveyor example
 		Handler: middlewares.Conveyor(
 			rtr, middlewares.NewCompressor(c.Logger).GzipMiddleware,
-			middlewares.New(c.Logger).CookieMiddleware,
+			middlewares.NewCookie(c.Logger).CookieMiddleware,
 		),
 	}
 	// Goroutine to run server
