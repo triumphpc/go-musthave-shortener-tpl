@@ -10,6 +10,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	goc "github.com/go-critic/go-critic/checkers/analyzer"
+	"github.com/gostaticanalysis/nilerr"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/printf"
@@ -51,6 +53,8 @@ func main() {
 		printf.Analyzer,
 		shadow.Analyzer,
 		structtag.Analyzer,
+		goc.Analyzer,    // Go-critic
+		nilerr.Analyzer, // nilerr
 	}
 
 	// Enable all SA checks
