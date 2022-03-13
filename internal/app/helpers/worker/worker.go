@@ -99,7 +99,7 @@ func New(ctx context.Context, l *zap.Logger, s repository.Repository) (*Pool, fu
 	go func() {
 		total := 0
 		for c := range p.total {
-			total = total + c
+			total += c
 		}
 		// Out how many updates
 		p.logger.Info("Total updated", zap.Int("count", total))
@@ -208,19 +208,7 @@ func (p *Pool) Push(ids []string, userID string) bool {
 	t := Task{ids, userID}
 	// Add to queue new Task for update
 	p.queue.arr = append(p.queue.arr, &t)
-	//awake PopWait in worker
+	// awake PopWait in worker
 	p.queue.cond.Signal()
 	return true
 }
-
-//// bunchUpdateAsDeleted  update as deleted
-//func (w *Worker) bunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
-//	if len(ids) == 0 {
-//		return nil
-//	}
-//
-//	idsArr := pq.Array(ids)
-//	_, err := w.pool.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
-//
-//	return err
-//}

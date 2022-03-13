@@ -1,8 +1,11 @@
 // Static analytic service. Include static analytic packages:
 // - golang.org/x/tools/go/analysis/passes
 // - all SA classes staticcheck.io
+// - Go-critic and nilerr linters
+// - OsExitAnalyzer to check os.Exit calls in main packages
 //
 // How to run:
+//
 // ./cmd/staticlint/main ./...
 
 package main
@@ -12,6 +15,7 @@ import (
 	"fmt"
 	goc "github.com/go-critic/go-critic/checkers/analyzer"
 	"github.com/gostaticanalysis/nilerr"
+	"github.com/triumphpc/go-musthave-shortener-tpl/pkg/myanalyzer"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/printf"
@@ -50,6 +54,7 @@ func main() {
 	}
 
 	mychecks := []*analysis.Analyzer{
+		myanalyzer.OsExitAnalyzer,
 		printf.Analyzer,
 		shadow.Analyzer,
 		structtag.Analyzer,
