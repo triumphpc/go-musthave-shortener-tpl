@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -18,7 +19,16 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
 )
 
+// Global variables
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 func main() {
+	// Print build info
+	printBuildInfo()
 	// Init project config
 	c := configs.Instance()
 	// Allocation handler and storage
@@ -56,6 +66,26 @@ func main() {
 	shutDownServer(ctx, c, srv, poolClose)
 }
 
+// printBuildInfo print info about package
+func printBuildInfo() {
+	if buildVersion == "" {
+		buildVersion = "N/A"
+	}
+
+	if buildDate == "" {
+		buildDate = "N/A"
+	}
+
+	if buildCommit == "" {
+		buildCommit = "N/A"
+	}
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+}
+
+// shutDownServer exit for server
 func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
 	// Context with cancel func
 	interrupt := make(chan os.Signal, 1)
