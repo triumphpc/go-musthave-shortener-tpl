@@ -22,6 +22,7 @@ require (
 	github.com/rogpeppe/go-internal v1.3.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.19.1 // indirect
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
 	golang.org/x/tools v0.1.9 // indirect

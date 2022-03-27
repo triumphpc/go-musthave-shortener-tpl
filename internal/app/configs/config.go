@@ -27,6 +27,7 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"unknown"`
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
+	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:""`
 	Storage         repository.Repository
 	Logger          *zap.Logger
 	Database        *sql.DB
@@ -38,6 +39,7 @@ const (
 	FileStoragePath        = "FILE_STORAGE_PATH"
 	DatabaseDsn            = "DATABASE_DSN"
 	FileStoragePathDefault = "unknown"
+	EnableHTTPS            = "ENABLE_HTTPS"
 )
 
 // Maps for take inv params
@@ -46,6 +48,7 @@ var mapVarToInv = map[string]string{
 	ServerAddress:   "a",
 	FileStoragePath: "f",
 	DatabaseDsn:     "d",
+	EnableHTTPS:     "s",
 }
 
 var instance *Config
@@ -108,6 +111,8 @@ func (c *Config) Param(p string) (string, error) {
 		return c.FileStoragePath, nil
 	case DatabaseDsn:
 		return c.DatabaseDsn, nil
+	case EnableHTTPS:
+		return c.EnableHTTPS, nil
 	}
 	return "", ErrUnknownParam
 }
@@ -126,6 +131,7 @@ func (c *Config) init() {
 	sa := flag.String(mapVarToInv[ServerAddress], "", "")
 	fs := flag.String(mapVarToInv[FileStoragePath], "", "")
 	dbDSN := flag.String(mapVarToInv[DatabaseDsn], "", "")
+	ssl := flag.String(mapVarToInv[EnableHTTPS], "", "")
 	flag.Parse()
 
 	if *bu != "" {
@@ -139,5 +145,8 @@ func (c *Config) init() {
 	}
 	if *dbDSN != "" {
 		c.DatabaseDsn = *dbDSN
+	}
+	if *ssl != "" {
+		c.EnableHTTPS = *ssl
 	}
 }

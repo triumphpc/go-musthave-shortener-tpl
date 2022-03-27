@@ -3,20 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"os/signal"
-	"syscall"
-
 	_ "github.com/lib/pq"
-	"go.uber.org/zap"
-
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/acme/autocert"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 // Global variables
@@ -40,30 +40,79 @@ func main() {
 	// Init routes
 	rtr := routes.Router(h, c, p)
 	http.Handle("/", rtr)
-	// Get base URL
+	// Init handle
+	mux := middlewares.Conveyor(
+		rtr, middlewares.NewCompressor(c.Logger).GzipMiddleware,
+		middlewares.NewCookie(c.Logger).CookieMiddleware,
+	)
+
+	// HTTP server
+	if c.EnableHTTPS == "" {
+		srv := startHTTPServer(c, mux)
+		shutDownServer(ctx, c, srv, poolClose)
+	} else {
+		// HTTPS server
+		srv := startHTTPSServer(c, mux)
+		shutDownServer(ctx, c, srv, poolClose)
+	}
+}
+
+// startHTTPSServer run HTTPS server
+func startHTTPSServer(c *configs.Config, h http.Handler) *http.Server {
 	serverAddress, err := c.Param(configs.ServerAddress)
 	if err != nil {
 		c.Logger.Fatal("app error exit", zap.Error(err))
 	}
+
+	// Start HTTPS server
+	manager := &autocert.Manager{
+		Cache:      autocert.DirCache("cache-dir"),
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(serverAddress),
+	}
+
+	srv := &http.Server{
+		Addr:      ":443",
+		Handler:   h,
+		TLSConfig: manager.TLSConfig(),
+	}
+
+	go func() {
+		err := srv.ListenAndServeTLS("server.crt", "server.key")
+		if err != nil {
+			c.Logger.Info("app error exit", zap.Error(err))
+			syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+		}
+	}()
+
+	c.Logger.Info("Start server address: 443")
+
+	return srv
+}
+
+// startHTTPServer run HTTP server
+func startHTTPServer(c *configs.Config, h http.Handler) *http.Server {
+	serverAddress, err := c.Param(configs.ServerAddress)
+	if err != nil {
+		c.Logger.Fatal("app error exit", zap.Error(err))
+	}
+
+	srv := &http.Server{
+		Addr:    serverAddress,
+		Handler: h,
+	}
+
+	go func() {
+		err = srv.ListenAndServe()
+		if err != nil {
+			c.Logger.Info("app error exit", zap.Error(err))
+			syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+		}
+	}()
+
 	c.Logger.Info("Start server address: " + serverAddress)
 
-	// Init server
-	srv := &http.Server{
-		Addr: serverAddress,
-		// Send request to conveyor example
-		Handler: middlewares.Conveyor(
-			rtr, middlewares.NewCompressor(c.Logger).GzipMiddleware,
-			middlewares.NewCookie(c.Logger).CookieMiddleware,
-		),
-	}
-	// Goroutine to run server
-	go func() {
-		c.Logger.Info("app error exit", zap.Error(srv.ListenAndServe()))
-	}()
-	c.Logger.Info("The service is ready to listen and serve.")
-
-	// Shut down handler
-	shutDownServer(ctx, c, srv, poolClose)
+	return srv
 }
 
 // printBuildInfo print info about package
@@ -100,6 +149,12 @@ func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, po
 		c.Logger.Info("Got SIGTERM...")
 	}
 
+	// Resources release
+	releaseResources(ctx, c, srv, poolClose)
+}
+
+// releaseResources free resources
+func releaseResources(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
 	c.Logger.Info("The service is shutting down...")
 	// database close
 	if c.Database != nil {
@@ -111,6 +166,7 @@ func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, po
 	}
 	// Close pool worker
 	poolClose()
+	time.Sleep(1 * time.Second)
 	// Server shutdown
 	if err := srv.Shutdown(ctx); err != nil {
 		c.Logger.Info("app error exit", zap.Error(err))
