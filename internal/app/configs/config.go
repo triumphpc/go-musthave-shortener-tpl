@@ -26,7 +26,7 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
-	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:""`
+	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:"false"`
 	Storage         repository.Repository
 	Logger          *zap.Logger
 	Database        *sql.DB
