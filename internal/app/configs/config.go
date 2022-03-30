@@ -3,9 +3,12 @@ package configs
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
+	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
@@ -23,9 +26,9 @@ var ErrUnknownParam = errors.New("unknown param")
 
 // Config project
 type Config struct {
-	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"unknown"`
-	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	BaseURL         string `env:"BASE_URL" envDefault:""`
+	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
+	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:""`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
 	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:""`
 	Storage         repository.Repository
@@ -52,6 +55,15 @@ var mapVarToInv = map[string]string{
 }
 
 var instance *Config
+
+// JsonConfig for json config
+type JsonConfig struct {
+	BaseURL         string `json:"server_address"`
+	ServerAddress   string `json:"base_url"`
+	FileStoragePath string `json:"file_storage_path"`
+	DatabaseDsn     string `json:"database_dsn"`
+	EnableHTTPS     string `json:"enable_https"`
+}
 
 // Instance new Config
 func Instance() *Config {
@@ -127,6 +139,7 @@ func (c *Config) initInv() {
 
 // initParams from cli params
 func (c *Config) init() {
+	// Parse from flags
 	bu := flag.String(mapVarToInv[BaseURL], "", "")
 	sa := flag.String(mapVarToInv[ServerAddress], "", "")
 	fs := flag.String(mapVarToInv[FileStoragePath], "", "")
@@ -134,6 +147,7 @@ func (c *Config) init() {
 	ssl := flag.String(mapVarToInv[EnableHTTPS], "", "")
 	flag.Parse()
 
+	// Parse from env
 	if *bu != "" {
 		c.BaseURL = *bu
 	}
@@ -148,5 +162,38 @@ func (c *Config) init() {
 	}
 	if *ssl != "" {
 		c.EnableHTTPS = *ssl
+	}
+
+	// Init from json evn config
+	// Open our jsonFile
+	pwd, _ := os.Getwd()
+	byteValue, err := ioutil.ReadFile(pwd + "/../../configs/env.json")
+
+	// if we os.Open returns an error then handle it
+	if err != nil {
+		// Nothing to do
+		return
+	}
+	// we initialize our Users array
+	var config JsonConfig
+
+	// we unmarshal our byteArray which contains our
+	// jsonFile's content into 'config' which we defined above
+	json.Unmarshal(byteValue, &config)
+
+	if c.BaseURL == "" {
+		c.BaseURL = config.BaseURL
+	}
+	if c.ServerAddress == "" {
+		c.ServerAddress = config.ServerAddress
+	}
+	if c.FileStoragePath == "" {
+		c.FileStoragePath = config.FileStoragePath
+	}
+	if c.DatabaseDsn == "" {
+		c.DatabaseDsn = config.DatabaseDsn
+	}
+	if c.EnableHTTPS == "" {
+		c.EnableHTTPS = config.EnableHTTPS
 	}
 }

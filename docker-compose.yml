@@ -12,7 +12,9 @@ services:
       - postgre_service
 #      - goose_service
     environment:
-      - DATABASE_DSN=postgres://postgres:qwerty@postgre_service:5436/postgres?sslmode=disable
+      - DATABASE_DSN=postgres://postgres:qwerty@postgre_service:5432/postgres?sslmode=disable
+    networks:
+      - app-network
 
   # docker-compose run --rm goose_service - run goose service container
   # docker-compose up -d --build goose_service - rebuild goose container
@@ -46,6 +48,8 @@ services:
     volumes:
       - ./migrations:/migrations
     entrypoint: [ "bash", "entrypoint_exec.sh" ]
+    networks:
+      - app-network
 
   postgre_service:
     restart: always
@@ -59,3 +63,9 @@ services:
       - POSTGRES_USER=postgres
     ports:
       - "5432:5432"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
