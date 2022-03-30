@@ -25,7 +25,7 @@ var ErrUnknownParam = errors.New("unknown param")
 
 // Config project
 type Config struct {
-	BaseURL         string `env:"BASE_URL"`
+	BaseURL         string `env:"BASE_URL" envDefault:""`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
@@ -183,7 +183,7 @@ func (c *Config) init() {
 	}
 
 	if c.BaseURL == "" {
-		//c.BaseURL = config.BaseURL
+		c.BaseURL = config.BaseURL
 	}
 	//if c.ServerAddress == "" {
 	//	c.ServerAddress = config.ServerAddress
