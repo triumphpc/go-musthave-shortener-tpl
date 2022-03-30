@@ -3,12 +3,15 @@ package configs
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
 	"go.uber.org/zap"
+	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
@@ -22,7 +25,7 @@ var ErrUnknownParam = errors.New("unknown param")
 
 // Config project
 type Config struct {
-	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+	BaseURL         string `env:"BASE_URL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
@@ -162,26 +165,26 @@ func (c *Config) init() {
 
 	// Init from json evn config
 	// Open our jsonFile
-	//pwd, _ := os.Getwd()
-	//byteValue, err := ioutil.ReadFile(pwd + "/../../configs/env.json")
-	//
-	//// if we os.Open returns an error then handle it
-	//if err != nil {
-	//	// Nothing to do
-	//	return
-	//}
-	//// we initialize our Users array
-	//var config JSONConfig
-	//
-	//// jsonFile's content into 'config' which we defined above
-	//err = json.Unmarshal(byteValue, &config)
-	//if err != nil {
-	//	return
-	//}
-	//
-	//if c.BaseURL == "" {
-	//	c.BaseURL = config.BaseURL
-	//}
+	pwd, _ := os.Getwd()
+	byteValue, err := ioutil.ReadFile(pwd + "/../../configs/env.json")
+
+	// if we os.Open returns an error then handle it
+	if err != nil {
+		// Nothing to do
+		return
+	}
+	// we initialize our Users array
+	var config JSONConfig
+
+	// jsonFile's content into 'config' which we defined above
+	err = json.Unmarshal(byteValue, &config)
+	if err != nil {
+		return
+	}
+
+	if c.BaseURL == "" {
+		c.BaseURL = config.BaseURL
+	}
 	//if c.ServerAddress == "" {
 	//	c.ServerAddress = config.ServerAddress
 	//}
