@@ -183,7 +183,7 @@ func (c *Config) init() {
 	}
 
 	if c.BaseURL == "" {
-		c.BaseURL = config.BaseURL
+		//c.BaseURL = config.BaseURL
 	}
 	//if c.ServerAddress == "" {
 	//	c.ServerAddress = config.ServerAddress
