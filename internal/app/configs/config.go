@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -60,8 +59,8 @@ var instance *Config
 
 // JSONConfig for json config
 type JSONConfig struct {
-	BaseURL         string `json:"server_address"`
-	ServerAddress   string `json:"base_url"`
+	BaseURL         string `json:"base_url"`
+	ServerAddress   string `json:"server_address"`
 	FileStoragePath string `json:"file_storage_path"`
 	DatabaseDsn     string `json:"database_dsn"`
 	EnableHTTPS     bool   `json:"enable_https"`
@@ -173,7 +172,6 @@ func (c *Config) init() {
 
 	// if we os.Open returns an error then handle it
 	if err != nil {
-		fmt.Println("ERROR. No path ", pwd)
 		// Nothing to do
 		return
 	}
@@ -183,7 +181,6 @@ func (c *Config) init() {
 	// jsonFile's content into 'config' which we defined above
 	err = json.Unmarshal(byteValue, &config)
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 
@@ -198,7 +195,6 @@ func (c *Config) init() {
 			c.FileStoragePath = config.FileStoragePath
 		}
 	}
-
 	if c.DatabaseDsn == "" {
 		c.DatabaseDsn = config.DatabaseDsn
 	}
