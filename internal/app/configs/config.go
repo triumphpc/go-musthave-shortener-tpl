@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
@@ -56,13 +58,13 @@ var mapVarToInv = map[string]string{
 
 var instance *Config
 
-// JsonConfig for json config
-type JsonConfig struct {
+// JSONConfig for json config
+type JSONConfig struct {
 	BaseURL         string `json:"server_address"`
 	ServerAddress   string `json:"base_url"`
 	FileStoragePath string `json:"file_storage_path"`
 	DatabaseDsn     string `json:"database_dsn"`
-	EnableHTTPS     string `json:"enable_https"`
+	EnableHTTPS     bool   `json:"enable_https"`
 }
 
 // Instance new Config
@@ -171,15 +173,19 @@ func (c *Config) init() {
 
 	// if we os.Open returns an error then handle it
 	if err != nil {
+		fmt.Println("ERROR. No path ", pwd)
 		// Nothing to do
 		return
 	}
 	// we initialize our Users array
-	var config JsonConfig
+	var config JSONConfig
 
-	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'config' which we defined above
-	json.Unmarshal(byteValue, &config)
+	err = json.Unmarshal(byteValue, &config)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	if c.BaseURL == "" {
 		c.BaseURL = config.BaseURL
@@ -188,12 +194,15 @@ func (c *Config) init() {
 		c.ServerAddress = config.ServerAddress
 	}
 	if c.FileStoragePath == "" {
-		c.FileStoragePath = config.FileStoragePath
+		if _, err := os.Stat(config.FileStoragePath); !errors.Is(err, os.ErrNotExist) {
+			c.FileStoragePath = config.FileStoragePath
+		}
 	}
+
 	if c.DatabaseDsn == "" {
 		c.DatabaseDsn = config.DatabaseDsn
 	}
 	if c.EnableHTTPS == "" {
-		c.EnableHTTPS = config.EnableHTTPS
+		c.EnableHTTPS = strconv.FormatBool(config.EnableHTTPS)
 	}
 }

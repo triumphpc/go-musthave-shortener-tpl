@@ -47,7 +47,7 @@ func main() {
 	)
 
 	// HTTP server
-	if c.EnableHTTPS == "" {
+	if c.EnableHTTPS == "false" {
 		srv := startHTTPServer(c, mux)
 		shutDownServer(ctx, c, srv, poolClose)
 	} else {
