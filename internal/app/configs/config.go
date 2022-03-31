@@ -173,12 +173,15 @@ func (c *Config) init() {
 	pwd, _ := os.Getwd()
 	byteValue, err := ioutil.ReadFile(pwd + "/../../configs/env.json")
 
+	fmt.Println("HERE")
 	// if we os.Open returns an error then handle it
 	if err != nil {
 		fmt.Println("PROBLEM GET FILE")
 		// Nothing to do
 		return
 	}
+
+	fmt.Println("HERE 555")
 	// we initialize our Users array
 	var config JSONConfig
 
@@ -188,6 +191,8 @@ func (c *Config) init() {
 		fmt.Println("PROBLEM PARSE")
 		return
 	}
+
+	fmt.Println("HERE 2")
 
 	if c.BaseURL == "" {
 		c.BaseURL = config.BaseURL
