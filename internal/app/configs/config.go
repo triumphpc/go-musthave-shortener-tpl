@@ -175,6 +175,7 @@ func (c *Config) init() {
 
 	// if we os.Open returns an error then handle it
 	if err != nil {
+		fmt.Println("PROBLEM GET FILE")
 		// Nothing to do
 		return
 	}
@@ -184,6 +185,7 @@ func (c *Config) init() {
 	// jsonFile's content into 'config' which we defined above
 	err = json.Unmarshal(byteValue, &config)
 	if err != nil {
+		fmt.Println("PROBLEM PARSE")
 		return
 	}
 
