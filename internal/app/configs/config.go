@@ -170,9 +170,13 @@ func (c *Config) init() {
 
 	// Init from json evn config
 	// Open our jsonFile
-	//pwd, _ := os.Getwd()
+	pwd, _ := os.Getwd()
+	path := pwd + "/configs/env.json"
+
+	fmt.Println(path)
+
 	//byteValue, err := ioutil.ReadFile(pwd + "/../../configs/env.json")
-	byteValue, err := ioutil.ReadFile("./config/env.json")
+	byteValue, err := ioutil.ReadFile(path)
 
 	// if we os.Open returns an error then handle it
 	if err != nil {
