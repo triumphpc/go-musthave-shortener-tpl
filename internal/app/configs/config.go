@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
@@ -163,6 +165,9 @@ func (c *Config) init() {
 		c.EnableHTTPS = *ssl
 	}
 
+	fmt.Println("TEST")
+	fmt.Printf("%#v", c)
+
 	// Init from json evn config
 	// Open our jsonFile
 	pwd, _ := os.Getwd()
@@ -182,27 +187,25 @@ func (c *Config) init() {
 		return
 	}
 
-	c.BaseURL = "http://localhost:8080"
+	if c.BaseURL == "" {
+		c.BaseURL = config.BaseURL
+	}
+	if c.ServerAddress == "" {
+		c.ServerAddress = config.ServerAddress
+	}
+	if c.FileStoragePath == "" {
+		if _, err := os.Stat(config.FileStoragePath); !errors.Is(err, os.ErrNotExist) {
+			c.FileStoragePath = config.FileStoragePath
+		}
+	}
+	if c.DatabaseDsn == "" {
+		c.DatabaseDsn = config.DatabaseDsn
+	}
+	if c.EnableHTTPS == "" {
+		c.EnableHTTPS = strconv.FormatBool(config.EnableHTTPS)
+	}
 
-	//fmt.Println(c.BaseURL)
+	fmt.Println("TEST 2")
+	fmt.Printf("%#v", c)
 
-	//if c.BaseURL == "" {
-	//	c.BaseURL = config.BaseURL
-	//}
-
-	//fmt.Println(c.BaseURL)
-	//if c.ServerAddress == "" {
-	//	c.ServerAddress = config.ServerAddress
-	//}
-	//if c.FileStoragePath == "" {
-	//	if _, err := os.Stat(config.FileStoragePath); !errors.Is(err, os.ErrNotExist) {
-	//		c.FileStoragePath = config.FileStoragePath
-	//	}
-	//}
-	//if c.DatabaseDsn == "" {
-	//	c.DatabaseDsn = config.DatabaseDsn
-	//}
-	//if c.EnableHTTPS == "" {
-	//	c.EnableHTTPS = strconv.FormatBool(config.EnableHTTPS)
-	//}
 }
