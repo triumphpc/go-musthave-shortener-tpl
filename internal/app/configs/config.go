@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
 	"go.uber.org/zap"
@@ -165,39 +164,26 @@ func (c *Config) init() {
 		c.EnableHTTPS = *ssl
 	}
 
-	fmt.Println("TEST")
-	fmt.Printf("%#v", c)
-
 	// Init from json evn config
 	// Open our jsonFile
 	pwd, _ := os.Getwd()
 	path := pwd + "/configs/env.json"
-
-	fmt.Println(path)
-
 	//byteValue, err := ioutil.ReadFile(pwd + "/../../configs/env.json")
 	byteValue, err := ioutil.ReadFile(path)
 
 	// if we os.Open returns an error then handle it
 	if err != nil {
-		fmt.Println("PROBLEM GET FILE")
 		// Nothing to do
 		return
 	}
-
-	fmt.Println("HERE 555")
 	// we initialize our Users array
 	var config JSONConfig
 
 	// jsonFile's content into 'config' which we defined above
 	err = json.Unmarshal(byteValue, &config)
 	if err != nil {
-		fmt.Println("PROBLEM PARSE")
 		return
 	}
-
-	fmt.Println("HERE 2")
-
 	if c.BaseURL == "" {
 		c.BaseURL = config.BaseURL
 	}
@@ -215,8 +201,4 @@ func (c *Config) init() {
 	if c.EnableHTTPS == "" {
 		c.EnableHTTPS = strconv.FormatBool(config.EnableHTTPS)
 	}
-
-	fmt.Println("TEST 2")
-	fmt.Printf("%#v", c)
-
 }
