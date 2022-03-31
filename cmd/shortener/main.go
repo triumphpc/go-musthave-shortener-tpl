@@ -145,6 +145,8 @@ func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, po
 	switch killSignal {
 	case os.Interrupt:
 		c.Logger.Info("Got SIGINT...")
+	case syscall.SIGQUIT:
+		c.Logger.Info("Got SIGQUIT...")
 	case syscall.SIGTERM:
 		c.Logger.Info("Got SIGTERM...")
 	}
