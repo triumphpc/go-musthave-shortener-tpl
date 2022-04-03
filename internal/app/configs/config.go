@@ -8,6 +8,7 @@ import (
 	"flag"
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
@@ -28,9 +29,9 @@ var ErrUnknownParam = errors.New("unknown param")
 type Config struct {
 	BaseURL         string `env:"BASE_URL" envDefault:""`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
-	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:""`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
-	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:"false"`
+	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:""`
 	Storage         repository.Repository
 	Logger          *zap.Logger
 	Database        *sql.DB
@@ -167,8 +168,7 @@ func (c *Config) init() {
 	// Init from json evn config
 	// Open our jsonFile
 	pwd, _ := os.Getwd()
-	path := pwd + "/configs/env.json"
-	//byteValue, err := ioutil.ReadFile(pwd + "/../../configs/env.json")
+	path := pwd + consts.ConfigPath
 	byteValue, err := ioutil.ReadFile(path)
 
 	// if we os.Open returns an error then handle it

@@ -16,7 +16,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 // Global variables
@@ -56,17 +55,17 @@ func main() {
 
 	// HTTP server
 	if c.EnableHTTPS == "false" {
-		srv := startHTTPServer(c, mux)
+		srv := startHTTPServer(c, mux, stop)
 		releaseResources(ctx, c, srv, poolClose)
 	} else {
 		// HTTPS server
-		srv := startHTTPSServer(c, mux)
+		srv := startHTTPSServer(c, mux, stop)
 		releaseResources(ctx, c, srv, poolClose)
 	}
 }
 
 // startHTTPSServer run HTTPS server
-func startHTTPSServer(c *configs.Config, h http.Handler) *http.Server {
+func startHTTPSServer(c *configs.Config, h http.Handler, stop context.CancelFunc) *http.Server {
 	serverAddress, err := c.Param(configs.ServerAddress)
 	if err != nil {
 		c.Logger.Fatal("app error exit", zap.Error(err))
@@ -89,7 +88,7 @@ func startHTTPSServer(c *configs.Config, h http.Handler) *http.Server {
 		err := srv.ListenAndServeTLS("server.crt", "server.key")
 		if err != nil {
 			c.Logger.Info("app error exit", zap.Error(err))
-			syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+			stop()
 		}
 	}()
 
@@ -99,7 +98,7 @@ func startHTTPSServer(c *configs.Config, h http.Handler) *http.Server {
 }
 
 // startHTTPServer run HTTP server
-func startHTTPServer(c *configs.Config, h http.Handler) *http.Server {
+func startHTTPServer(c *configs.Config, h http.Handler, stop context.CancelFunc) *http.Server {
 	serverAddress, err := c.Param(configs.ServerAddress)
 	if err != nil {
 		c.Logger.Fatal("app error exit", zap.Error(err))
@@ -114,7 +113,7 @@ func startHTTPServer(c *configs.Config, h http.Handler) *http.Server {
 		err = srv.ListenAndServe()
 		if err != nil {
 			c.Logger.Info("app error exit", zap.Error(err))
-			syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+			stop()
 		}
 	}()
 
@@ -160,8 +159,6 @@ func releaseResources(ctx context.Context, c *configs.Config, srv *http.Server, 
 	}
 	// Close pool worker
 	poolClose()
-
-	time.Sleep(1 * time.Second)
 	// Server shutdown
 	if err := srv.Shutdown(ctx); err != nil {
 		c.Logger.Info("app error exit", zap.Error(err))
