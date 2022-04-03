@@ -33,8 +33,16 @@ func main() {
 	c := configs.Instance()
 	// Allocation handler and storage
 	h := handlers.New(c.Logger, c.Storage)
-	// Worker for background tasks
-	ctx := context.Background()
+
+	// Init context
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+	defer stop()
+
 	// Pool workers
 	p, poolClose := worker.New(ctx, c.Logger, c.Storage)
 	// Init routes
@@ -49,11 +57,11 @@ func main() {
 	// HTTP server
 	if c.EnableHTTPS == "false" {
 		srv := startHTTPServer(c, mux)
-		shutDownServer(ctx, c, srv, poolClose)
+		releaseResources(ctx, c, srv, poolClose)
 	} else {
 		// HTTPS server
 		srv := startHTTPSServer(c, mux)
-		shutDownServer(ctx, c, srv, poolClose)
+		releaseResources(ctx, c, srv, poolClose)
 	}
 }
 
@@ -134,29 +142,13 @@ func printBuildInfo() {
 	fmt.Printf("Build commit: %s\n", buildCommit)
 }
 
-// shutDownServer exit for server
-func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
-	// Context with cancel func
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
-	// Add context for Graceful shutdown
-	killSignal := <-interrupt
-	switch killSignal {
-	case os.Interrupt:
-		c.Logger.Info("Got SIGINT...")
-	case syscall.SIGQUIT:
-		c.Logger.Info("Got SIGQUIT...")
-	case syscall.SIGTERM:
-		c.Logger.Info("Got SIGTERM...")
-	}
-
-	// Resources release
-	releaseResources(ctx, c, srv, poolClose)
-}
-
 // releaseResources free resources
 func releaseResources(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
+	<-ctx.Done()
+	if ctx.Err() != nil {
+		fmt.Printf("Error:%v\n", ctx.Err())
+	}
+
 	c.Logger.Info("The service is shutting down...")
 	// database close
 	if c.Database != nil {
@@ -168,6 +160,7 @@ func releaseResources(ctx context.Context, c *configs.Config, srv *http.Server, 
 	}
 	// Close pool worker
 	poolClose()
+
 	time.Sleep(1 * time.Second)
 	// Server shutdown
 	if err := srv.Shutdown(ctx); err != nil {
