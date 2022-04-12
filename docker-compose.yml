@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+#   go run cmd/shortener/main.go -d 'postgres://postgres:qwerty@localhost:5432/postgres?sslmode=disable'
   go_service:
     build:
       context: .

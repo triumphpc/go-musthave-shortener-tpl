@@ -23,4 +23,8 @@ type Repository interface {
 	Clear() error
 	// BunchUpdateAsDeleted set flag as deleted
 	BunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error
+	// UrlCount get url count in storage
+	UrlCount() int
+	// UserCount get users count in storage
+	UserCount() int
 }
