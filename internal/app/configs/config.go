@@ -3,13 +3,17 @@ package configs
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
-	"log"
-
 	"github.com/caarlos0/env"
 	_ "github.com/caarlos0/env/v6"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/consts"
 	"go.uber.org/zap"
+	"io/ioutil"
+	"log"
+	"os"
+	"strconv"
 
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/db"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/logger"
@@ -23,10 +27,11 @@ var ErrUnknownParam = errors.New("unknown param")
 
 // Config project
 type Config struct {
-	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"unknown"`
-	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	BaseURL         string `env:"BASE_URL" envDefault:""`
+	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:""`
+	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:""`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
+	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:""`
 	Storage         repository.Repository
 	Logger          *zap.Logger
 	Database        *sql.DB
@@ -38,6 +43,7 @@ const (
 	FileStoragePath        = "FILE_STORAGE_PATH"
 	DatabaseDsn            = "DATABASE_DSN"
 	FileStoragePathDefault = "unknown"
+	EnableHTTPS            = "ENABLE_HTTPS"
 )
 
 // Maps for take inv params
@@ -46,9 +52,19 @@ var mapVarToInv = map[string]string{
 	ServerAddress:   "a",
 	FileStoragePath: "f",
 	DatabaseDsn:     "d",
+	EnableHTTPS:     "s",
 }
 
 var instance *Config
+
+// JSONConfig for json config
+type JSONConfig struct {
+	BaseURL         string `json:"base_url"`
+	ServerAddress   string `json:"server_address"`
+	FileStoragePath string `json:"file_storage_path"`
+	DatabaseDsn     string `json:"database_dsn"`
+	EnableHTTPS     bool   `json:"enable_https"`
+}
 
 // Instance new Config
 func Instance() *Config {
@@ -108,6 +124,8 @@ func (c *Config) Param(p string) (string, error) {
 		return c.FileStoragePath, nil
 	case DatabaseDsn:
 		return c.DatabaseDsn, nil
+	case EnableHTTPS:
+		return c.EnableHTTPS, nil
 	}
 	return "", ErrUnknownParam
 }
@@ -122,12 +140,15 @@ func (c *Config) initInv() {
 
 // initParams from cli params
 func (c *Config) init() {
+	// Parse from flags
 	bu := flag.String(mapVarToInv[BaseURL], "", "")
 	sa := flag.String(mapVarToInv[ServerAddress], "", "")
 	fs := flag.String(mapVarToInv[FileStoragePath], "", "")
 	dbDSN := flag.String(mapVarToInv[DatabaseDsn], "", "")
+	ssl := flag.String(mapVarToInv[EnableHTTPS], "", "")
 	flag.Parse()
 
+	// Parse from env
 	if *bu != "" {
 		c.BaseURL = *bu
 	}
@@ -139,5 +160,45 @@ func (c *Config) init() {
 	}
 	if *dbDSN != "" {
 		c.DatabaseDsn = *dbDSN
+	}
+	if *ssl != "" {
+		c.EnableHTTPS = *ssl
+	}
+
+	// Init from json evn config
+	// Open our jsonFile
+	pwd, _ := os.Getwd()
+	path := pwd + consts.ConfigPath
+	byteValue, err := ioutil.ReadFile(path)
+
+	// if we os.Open returns an error then handle it
+	if err != nil {
+		// Nothing to do
+		return
+	}
+	// we initialize our Users array
+	var config JSONConfig
+
+	// jsonFile's content into 'config' which we defined above
+	err = json.Unmarshal(byteValue, &config)
+	if err != nil {
+		return
+	}
+	if c.BaseURL == "" {
+		c.BaseURL = config.BaseURL
+	}
+	if c.ServerAddress == "" {
+		c.ServerAddress = config.ServerAddress
+	}
+	if c.FileStoragePath == "" {
+		if _, err := os.Stat(config.FileStoragePath); !errors.Is(err, os.ErrNotExist) {
+			c.FileStoragePath = config.FileStoragePath
+		}
+	}
+	if c.DatabaseDsn == "" {
+		c.DatabaseDsn = config.DatabaseDsn
+	}
+	if c.EnableHTTPS == "" {
+		c.EnableHTTPS = strconv.FormatBool(config.EnableHTTPS)
 	}
 }

@@ -25,6 +25,7 @@ git fetch template && git checkout template/main .github
 # Запуск программы
 ```shell
 go run cmd/shortener/main.go -a ':8080' -d 'postgres://postgres:qwerty@localhost:5432/postgres?sslmode=disable'
+go run cmd/shortener/main.go  -s 'ssl'
 ```
 # Награзука
 ```shell
@@ -35,4 +36,14 @@ hey -n 10000 -c 5 -m POST -d '{"url": "http://test.ru"}' http://localhost:8080/a
 hey -n 10000 -c 5 -m POST -d '{\"url\": \"http://bench" + strconv.Itoa(i) + ".ru\"}' http://localhost:8080/
 hey -n 10000 -c 5 -m POST -d '[{"correlation_id": "123","original_url": "yandex.ru"},{"correlation_id": "555","original_url": "nnm.ru"}]' http://localhost:8080/api/shorten/batch
 
+```
+
+# SSL Server
+```shell
+# Key considerations for algorithm "RSA" ≥ 2048-bit
+openssl genrsa -out server.key 2048
+
+# Key considerations for algorithm "ECDSA" ≥ secp384r1
+# List ECDSA the supported curves (openssl ecparam -list_curves)
+openssl ecparam -genkey -name secp384r1 -out server.key
 ```

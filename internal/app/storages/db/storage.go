@@ -168,7 +168,7 @@ func (s *PostgreSQLStorage) BunchSave(userID user.UniqUser, urls []shortlink.URL
 	}
 	// Close statement
 	defer func(stmt *sql.Stmt) {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
 			s.l.Info("Close statement error", zap.Error(err))
 		}

@@ -2,72 +2,150 @@ package main
 
 import (
 	"context"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"os/signal"
-	"syscall"
-
+	"fmt"
 	_ "github.com/lib/pq"
-	"go.uber.org/zap"
-
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/acme/autocert"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+// Global variables
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
 )
 
 func main() {
+	// Print build info
+	printBuildInfo()
 	// Init project config
 	c := configs.Instance()
 	// Allocation handler and storage
 	h := handlers.New(c.Logger, c.Storage)
-	// Worker for background tasks
-	ctx := context.Background()
+
+	// Init context
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+	defer stop()
+
 	// Pool workers
 	p, poolClose := worker.New(ctx, c.Logger, c.Storage)
 	// Init routes
 	rtr := routes.Router(h, c, p)
 	http.Handle("/", rtr)
-	// Get base URL
+	// Init handle
+	mux := middlewares.Conveyor(
+		rtr, middlewares.NewCompressor(c.Logger).GzipMiddleware,
+		middlewares.NewCookie(c.Logger).CookieMiddleware,
+	)
+
+	// HTTP server
+	if c.EnableHTTPS == "false" {
+		srv := startHTTPServer(c, mux, stop)
+		releaseResources(ctx, c, srv, poolClose)
+	} else {
+		// HTTPS server
+		srv := startHTTPSServer(c, mux, stop)
+		releaseResources(ctx, c, srv, poolClose)
+	}
+}
+
+// startHTTPSServer run HTTPS server
+func startHTTPSServer(c *configs.Config, h http.Handler, stop context.CancelFunc) *http.Server {
 	serverAddress, err := c.Param(configs.ServerAddress)
 	if err != nil {
 		c.Logger.Fatal("app error exit", zap.Error(err))
 	}
-	c.Logger.Info("Start server address: " + serverAddress)
 
-	// Init server
-	srv := &http.Server{
-		Addr: serverAddress,
-		// Send request to conveyor example
-		Handler: middlewares.Conveyor(
-			rtr, middlewares.NewCompressor(c.Logger).GzipMiddleware,
-			middlewares.NewCookie(c.Logger).CookieMiddleware,
-		),
+	// Start HTTPS server
+	manager := &autocert.Manager{
+		Cache:      autocert.DirCache("cache-dir"),
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(serverAddress),
 	}
-	// Goroutine to run server
-	go func() {
-		c.Logger.Info("app error exit", zap.Error(srv.ListenAndServe()))
-	}()
-	c.Logger.Info("The service is ready to listen and serve.")
 
-	// Shut down handler
-	shutDownServer(ctx, c, srv, poolClose)
+	srv := &http.Server{
+		Addr:      ":443",
+		Handler:   h,
+		TLSConfig: manager.TLSConfig(),
+	}
+
+	go func() {
+		err := srv.ListenAndServeTLS("server.crt", "server.key")
+		if err != nil {
+			c.Logger.Info("app error exit", zap.Error(err))
+			stop()
+		}
+	}()
+
+	c.Logger.Info("Start server address: 443")
+
+	return srv
 }
 
-func shutDownServer(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
-	// Context with cancel func
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+// startHTTPServer run HTTP server
+func startHTTPServer(c *configs.Config, h http.Handler, stop context.CancelFunc) *http.Server {
+	serverAddress, err := c.Param(configs.ServerAddress)
+	if err != nil {
+		c.Logger.Fatal("app error exit", zap.Error(err))
+	}
 
-	// Add context for Graceful shutdown
-	killSignal := <-interrupt
-	switch killSignal {
-	case os.Interrupt:
-		c.Logger.Info("Got SIGINT...")
-	case syscall.SIGTERM:
-		c.Logger.Info("Got SIGTERM...")
+	srv := &http.Server{
+		Addr:    serverAddress,
+		Handler: h,
+	}
+
+	go func() {
+		err = srv.ListenAndServe()
+		if err != nil {
+			c.Logger.Info("app error exit", zap.Error(err))
+			stop()
+		}
+	}()
+
+	c.Logger.Info("Start server address: " + serverAddress)
+
+	return srv
+}
+
+// printBuildInfo print info about package
+func printBuildInfo() {
+	if buildVersion == "" {
+		buildVersion = "N/A"
+	}
+
+	if buildDate == "" {
+		buildDate = "N/A"
+	}
+
+	if buildCommit == "" {
+		buildCommit = "N/A"
+	}
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+}
+
+// releaseResources free resources
+func releaseResources(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
+	<-ctx.Done()
+	if ctx.Err() != nil {
+		fmt.Printf("Error:%v\n", ctx.Err())
 	}
 
 	c.Logger.Info("The service is shutting down...")

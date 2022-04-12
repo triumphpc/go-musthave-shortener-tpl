@@ -42,7 +42,7 @@ func (h CompressorMw) GzipMiddleware(next http.Handler) http.Handler {
 			r.Body = reader
 		}
 
-		//Check if client support gzip for response
+		// Check if client support gzip for response
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)
 			return
