@@ -103,8 +103,8 @@ func (s *UserStorage) BunchUpdateAsDeleted(ctx context.Context, ids []string, us
 	return nil
 }
 
-// UrlCount implementation
-func (s *UserStorage) UrlCount() (counter int) {
+// URLCount implementation
+func (s *UserStorage) URLCount() (counter int) {
 	return 0
 
 }

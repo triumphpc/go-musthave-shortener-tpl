@@ -211,8 +211,8 @@ func (s *PostgreSQLStorage) BunchUpdateAsDeleted(ctx context.Context, ids []stri
 	return err
 }
 
-// UrlCount get saved url in storage
-func (s *PostgreSQLStorage) UrlCount() (counter int) {
+// URLCount get saved url in storage
+func (s *PostgreSQLStorage) URLCount() (counter int) {
 	s.db.QueryRow("SELECT count(*) FROM storage.short_links").Scan(&counter)
 	return
 }

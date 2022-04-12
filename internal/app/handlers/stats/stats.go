@@ -52,7 +52,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Main logic
-	urlCount := h.s.UrlCount()
+	urlCount := h.s.URLCount()
 	userCount := h.s.UserCount()
 
 	result := struct {
