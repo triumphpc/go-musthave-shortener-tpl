@@ -64,13 +64,17 @@ func main() {
 	if c.EnableHTTPS == "false" {
 		srv := startHTTPServer(c, mux, stop)
 		// gRPC service
-		rungRPC(c, p, s, stop)
+		if c.EnableGRPC == "true" {
+			rungRPC(c, p, s, stop)
+		}
 		releaseResources(ctx, c, srv, poolClose, s)
 	} else {
 		// HTTPS server
 		srv := startHTTPSServer(c, mux, stop)
-		// gRPC service
-		rungRPC(c, p, s, stop)
+		if c.EnableGRPC == "true" {
+			// gRPC service
+			rungRPC(c, p, s, stop)
+		}
 		releaseResources(ctx, c, srv, poolClose, s)
 	}
 

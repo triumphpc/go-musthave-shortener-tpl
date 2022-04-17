@@ -33,6 +33,7 @@ type Config struct {
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
 	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:""`
 	TrustedSubnet   string `env:"TRUSTED_SUBNET" envDefault:""`
+	EnableGRPC      string `env:"ENABLE_GRPC" envDefault:""`
 	Storage         repository.Repository
 	Logger          *zap.Logger
 	Database        *sql.DB
@@ -46,6 +47,7 @@ const (
 	FileStoragePathDefault = "unknown"
 	EnableHTTPS            = "ENABLE_HTTPS"
 	TrustedSubnet          = "TRUSTED_SUBNET"
+	EnableGRPC             = "ENABLE_GRPC"
 )
 
 // Maps for take inv params
@@ -68,6 +70,7 @@ type JSONConfig struct {
 	DatabaseDsn     string `json:"database_dsn"`
 	EnableHTTPS     bool   `json:"enable_https"`
 	TrustedSubnet   string `json:"trusted_subnet"`
+	EnableGRPC      bool   `json:"enable_grpc"`
 }
 
 // Instance new Config
@@ -133,6 +136,8 @@ func (c *Config) Param(p string) (string, error) {
 		return c.EnableHTTPS, nil
 	case TrustedSubnet:
 		return c.TrustedSubnet, nil
+	case EnableGRPC:
+		return c.EnableGRPC, nil
 	}
 	return "", ErrUnknownParam
 }
@@ -215,4 +220,6 @@ func (c *Config) init() {
 	if c.TrustedSubnet == "" {
 		c.TrustedSubnet = config.TrustedSubnet
 	}
+
+	c.EnableGRPC = strconv.FormatBool(config.EnableGRPC)
 }
