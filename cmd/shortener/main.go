@@ -78,7 +78,7 @@ func main() {
 
 // Run gRPC server
 func rungRPC(c *configs.Config, p *worker.Pool, s *grpc.Server, stop context.CancelFunc) {
-	listen, err := net.Listen("tcp", ":3200")
+	listen, err := net.Listen("tcp", ":3201")
 	if err != nil {
 		stop()
 		c.Logger.Fatal(err.Error())

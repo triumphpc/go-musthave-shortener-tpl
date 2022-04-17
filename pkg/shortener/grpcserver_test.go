@@ -11,6 +11,7 @@ import (
 	proto "github.com/triumphpc/go-musthave-shortener-tpl/pkg/api"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"math/rand"
 	"net/http"
@@ -33,7 +34,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestShortenerServer_AddLink(t *testing.T) {
-	conn, err := grpc.Dial(`:3200`, grpc.WithInsecure())
+	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,7 +77,7 @@ func TestShortenerServer_AddLink(t *testing.T) {
 }
 
 func TestShortenerServer_Ping(t *testing.T) {
-	conn, err := grpc.Dial(`:3200`, grpc.WithInsecure())
+	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,7 +95,7 @@ func TestShortenerServer_Ping(t *testing.T) {
 }
 
 func TestShortenerServer_AddBatch(t *testing.T) {
-	conn, err := grpc.Dial(`:3200`, grpc.WithInsecure())
+	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,12 +106,12 @@ func TestShortenerServer_AddBatch(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 
-	randId := strconv.Itoa(rand.Intn(99))
-	randId2 := strconv.Itoa(rand.Intn(99))
+	randID := strconv.Itoa(rand.Intn(99))
+	randID2 := strconv.Itoa(rand.Intn(99))
 
 	links := []*proto.JSONBatchLink{
-		{Link: "http://test1.ru" + randId, Id: &proto.LinkID{Id: "id_" + randId}},
-		{Link: "http://test1.ru" + randId2, Id: &proto.LinkID{Id: "id_" + randId2}},
+		{Link: "http://test1.ru" + randID, Id: &proto.LinkID{Id: "id_" + randID}},
+		{Link: "http://test1.ru" + randID2, Id: &proto.LinkID{Id: "id_" + randID2}},
 	}
 
 	resp, err := c.AddBatch(context.Background(), &proto.AddBatchRequest{Links: links})
@@ -124,7 +125,7 @@ func TestShortenerServer_AddBatch(t *testing.T) {
 }
 
 func TestShortenerServer_AddJSONLink(t *testing.T) {
-	conn, err := grpc.Dial(`:3200`, grpc.WithInsecure())
+	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,7 +151,7 @@ func TestShortenerServer_AddJSONLink(t *testing.T) {
 }
 
 func TestShortenerServer_UserLinks(t *testing.T) {
-	conn, err := grpc.Dial(`:3200`, grpc.WithInsecure())
+	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -168,7 +169,7 @@ func TestShortenerServer_UserLinks(t *testing.T) {
 }
 
 func TestShortenerServer_Stats(t *testing.T) {
-	conn, err := grpc.Dial(`:3200`, grpc.WithInsecure())
+	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -189,7 +190,7 @@ func TestShortenerServer_Stats(t *testing.T) {
 
 func TestShortenerServer_Delete(t *testing.T) {
 	// Registration
-	conn, err := grpc.Dial(`:3200`, grpc.WithInsecure())
+	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -198,10 +199,10 @@ func TestShortenerServer_Delete(t *testing.T) {
 	// Interface type
 	c := proto.NewShortenerClient(conn)
 	rand.Seed(time.Now().UnixNano())
-	randId := strconv.Itoa(rand.Intn(99))
+	randID := strconv.Itoa(rand.Intn(99))
 
 	links := []*proto.JSONBatchLink{
-		{Link: "http://test1.ru" + randId, Id: &proto.LinkID{Id: "id_" + randId}},
+		{Link: "http://test1.ru" + randID, Id: &proto.LinkID{Id: "id_" + randID}},
 	}
 
 	resp, err := c.AddBatch(context.Background(), &proto.AddBatchRequest{Links: links})
@@ -214,7 +215,7 @@ func TestShortenerServer_Delete(t *testing.T) {
 	// And check delete handler
 	deleteResp, err := c.Delete(context.Background(), &proto.DeleteRequest{
 		Id: []*proto.LinkID{
-			{Id: "id_" + randId},
+			{Id: "id_" + randID},
 		},
 	})
 	if err != nil {
@@ -225,7 +226,7 @@ func TestShortenerServer_Delete(t *testing.T) {
 }
 
 func TestShortenerServer_Origin(t *testing.T) {
-	conn, err := grpc.Dial(`:3200`, grpc.WithInsecure())
+	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
