@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/configs"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/storages/file"
 	proto "github.com/triumphpc/go-musthave-shortener-tpl/pkg/api"
@@ -34,6 +35,11 @@ func TestNew(t *testing.T) {
 }
 
 func TestShortenerServer_AddLink(t *testing.T) {
+	conf := configs.Instance()
+	if conf.EnableGRPC == "false" {
+		return
+	}
+
 	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
@@ -77,6 +83,10 @@ func TestShortenerServer_AddLink(t *testing.T) {
 }
 
 func TestShortenerServer_Ping(t *testing.T) {
+	conf := configs.Instance()
+	if conf.EnableGRPC == "false" {
+		return
+	}
 	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
@@ -95,6 +105,10 @@ func TestShortenerServer_Ping(t *testing.T) {
 }
 
 func TestShortenerServer_AddBatch(t *testing.T) {
+	conf := configs.Instance()
+	if conf.EnableGRPC == "false" {
+		return
+	}
 	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
@@ -125,6 +139,10 @@ func TestShortenerServer_AddBatch(t *testing.T) {
 }
 
 func TestShortenerServer_AddJSONLink(t *testing.T) {
+	conf := configs.Instance()
+	if conf.EnableGRPC == "false" {
+		return
+	}
 	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
@@ -151,6 +169,10 @@ func TestShortenerServer_AddJSONLink(t *testing.T) {
 }
 
 func TestShortenerServer_UserLinks(t *testing.T) {
+	conf := configs.Instance()
+	if conf.EnableGRPC == "false" {
+		return
+	}
 	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
@@ -169,6 +191,10 @@ func TestShortenerServer_UserLinks(t *testing.T) {
 }
 
 func TestShortenerServer_Stats(t *testing.T) {
+	conf := configs.Instance()
+	if conf.EnableGRPC == "false" {
+		return
+	}
 	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
@@ -189,7 +215,10 @@ func TestShortenerServer_Stats(t *testing.T) {
 }
 
 func TestShortenerServer_Delete(t *testing.T) {
-	// Registration
+	conf := configs.Instance()
+	if conf.EnableGRPC == "false" {
+		return
+	}
 	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
@@ -226,6 +255,10 @@ func TestShortenerServer_Delete(t *testing.T) {
 }
 
 func TestShortenerServer_Origin(t *testing.T) {
+	conf := configs.Instance()
+	if conf.EnableGRPC == "false" {
+		return
+	}
 	conn, err := grpc.Dial(`:3201`, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
