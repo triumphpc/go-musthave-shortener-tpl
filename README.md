@@ -26,6 +26,9 @@ git fetch template && git checkout template/main .github
 ```shell
 go run cmd/shortener/main.go -a ':8080' -d 'postgres://postgres:qwerty@localhost:5432/postgres?sslmode=disable'
 go run cmd/shortener/main.go  -s 'ssl'
+# start gRPC
+./cmd/shortener/grpc/main -d 'postgres://postgres:qwerty@localhost:5432/postgres?sslmode=disable'
+
 ```
 # Награзука
 ```shell

@@ -4,7 +4,6 @@ package db
 import (
 	"context"
 	"database/sql"
-
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
