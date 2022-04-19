@@ -32,6 +32,8 @@ type Config struct {
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:""`
 	DatabaseDsn     string `env:"DATABASE_DSN" envDefault:""`
 	EnableHTTPS     string `env:"ENABLE_HTTPS" envDefault:""`
+	TrustedSubnet   string `env:"TRUSTED_SUBNET" envDefault:""`
+	EnableGRPC      string `env:"ENABLE_GRPC" envDefault:""`
 	Storage         repository.Repository
 	Logger          *zap.Logger
 	Database        *sql.DB
@@ -44,6 +46,8 @@ const (
 	DatabaseDsn            = "DATABASE_DSN"
 	FileStoragePathDefault = "unknown"
 	EnableHTTPS            = "ENABLE_HTTPS"
+	TrustedSubnet          = "TRUSTED_SUBNET"
+	EnableGRPC             = "ENABLE_GRPC"
 )
 
 // Maps for take inv params
@@ -53,6 +57,7 @@ var mapVarToInv = map[string]string{
 	FileStoragePath: "f",
 	DatabaseDsn:     "d",
 	EnableHTTPS:     "s",
+	TrustedSubnet:   "t",
 }
 
 var instance *Config
@@ -64,6 +69,8 @@ type JSONConfig struct {
 	FileStoragePath string `json:"file_storage_path"`
 	DatabaseDsn     string `json:"database_dsn"`
 	EnableHTTPS     bool   `json:"enable_https"`
+	TrustedSubnet   string `json:"trusted_subnet"`
+	EnableGRPC      bool   `json:"enable_grpc"`
 }
 
 // Instance new Config
@@ -90,6 +97,7 @@ func Instance() *Config {
 				instance.Database = dbc
 			}
 		}
+
 		// Main handler
 		if dsn != "" && err == nil {
 			l.Info("Set db handler")
@@ -126,6 +134,10 @@ func (c *Config) Param(p string) (string, error) {
 		return c.DatabaseDsn, nil
 	case EnableHTTPS:
 		return c.EnableHTTPS, nil
+	case TrustedSubnet:
+		return c.TrustedSubnet, nil
+	case EnableGRPC:
+		return c.EnableGRPC, nil
 	}
 	return "", ErrUnknownParam
 }
@@ -146,6 +158,7 @@ func (c *Config) init() {
 	fs := flag.String(mapVarToInv[FileStoragePath], "", "")
 	dbDSN := flag.String(mapVarToInv[DatabaseDsn], "", "")
 	ssl := flag.String(mapVarToInv[EnableHTTPS], "", "")
+	ts := flag.String(mapVarToInv[TrustedSubnet], "", "")
 	flag.Parse()
 
 	// Parse from env
@@ -163,6 +176,9 @@ func (c *Config) init() {
 	}
 	if *ssl != "" {
 		c.EnableHTTPS = *ssl
+	}
+	if *ts != "" {
+		c.TrustedSubnet = *ts
 	}
 
 	// Init from json evn config
@@ -201,4 +217,9 @@ func (c *Config) init() {
 	if c.EnableHTTPS == "" {
 		c.EnableHTTPS = strconv.FormatBool(config.EnableHTTPS)
 	}
+	if c.TrustedSubnet == "" {
+		c.TrustedSubnet = config.TrustedSubnet
+	}
+
+	c.EnableGRPC = strconv.FormatBool(config.EnableGRPC)
 }

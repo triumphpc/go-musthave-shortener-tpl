@@ -1,0 +1,132 @@
+// protoc  --go_out=../../pkg/api --go_opt=paths=source_relative --go-grpc_out=../../pkg/api --go-grpc_opt=paths=source_relative shortener.proto
+syntax = "proto3";
+
+option go_package = "api/proto";
+
+package api;
+
+// Link for save handler
+message Link {
+  string link = 1; // Link
+}
+message ShortLink {
+  string link = 1; // Link
+}
+// In JSON format
+message JSONLink {
+  string link = 1;
+}
+message JSONBatchLink {
+  string link = 1;
+  LinkID id = 2;
+}
+// In JSON format
+message JSONShortLink {
+  string link = 1;
+}
+// In JSON for batch save
+message JSONBatchShortLink {
+  string link = 1;
+  LinkID id = 2;
+}
+
+// User links
+message UserLinks {
+  Link origin = 1;
+  ShortLink short = 2;
+}
+message LinkID {
+  string id = 1;
+}
+
+message AddLinkRequest {
+  Link link = 1;
+}
+message AddLinkResponse {
+  int32 code = 1; // Response code
+  ShortLink link = 2; // Short link
+}
+
+// Ping handler
+message PingRequest {}
+message PingResponse {
+  int32 code = 1;
+}
+
+// Get short handler
+message ShortLinkRequest {
+  ShortLink link = 1;
+}
+message ShortLinkResponse {
+  int32 code = 1;
+  Link link = 2; // origin link
+}
+
+// Batch save
+message AddBatchRequest {
+  repeated JSONBatchLink links = 1;
+}
+message AddBatchResponse {
+  int32 code = 1;
+  repeated JSONBatchShortLink links = 2;
+}
+
+// Save in JSON format
+message AddJSONLinkRequest {
+  JSONLink link = 1;
+}
+message AddJSONLinkResponse {
+  int32 code = 1;
+  JSONShortLink link = 2;
+}
+
+// Get user links
+message JSONUserLinksRequest {}
+message JSONUserLinksResponse {
+  int32 code = 1;
+  repeated UserLinks links = 2;
+}
+
+// Get user stat
+message StatsRequest {}
+message StatsResponse {
+  int32 urls = 1;
+  int32 users = 2;
+}
+
+// Delete urls by ids
+message DeleteRequest {
+  repeated LinkID id = 1;
+}
+message DeleteResponse {
+  int32 code = 1;
+}
+
+// Get origin by short
+message OriginRequest {
+   ShortLink link = 1;
+}
+message OriginResponse {
+  int32 code = 1;
+  Link link = 2;
+}
+
+
+service Shortener {
+  // Save link handler
+  rpc AddLink(AddLinkRequest) returns (AddLinkResponse);
+  // Ping handler
+  rpc Ping(PingRequest) returns (PingResponse);
+  // Batch save handler
+  rpc AddBatch(AddBatchRequest) returns (AddBatchResponse);
+  // Add link in JSON format
+  rpc AddJSONLink(AddJSONLinkRequest) returns (AddJSONLinkResponse);
+  // Get user links
+  rpc UserLinks(JSONUserLinksRequest) returns (JSONUserLinksResponse);
+  // Get users stat
+  rpc Stats(StatsRequest) returns (StatsResponse);
+  // On delete links by id
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  // Get origin from short
+  rpc Origin(OriginRequest) returns (OriginResponse);
+}

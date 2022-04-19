@@ -9,8 +9,12 @@ import (
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/middlewares"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/helpers/worker"
 	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/routes"
+	proto "github.com/triumphpc/go-musthave-shortener-tpl/pkg/api"
+	grpcshortener "github.com/triumphpc/go-musthave-shortener-tpl/pkg/shortener"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"
+	"google.golang.org/grpc"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -53,15 +57,48 @@ func main() {
 		middlewares.NewCookie(c.Logger).CookieMiddleware,
 	)
 
+	// make gRPC without registered service
+	s := grpc.NewServer()
+
 	// HTTP server
 	if c.EnableHTTPS == "false" {
 		srv := startHTTPServer(c, mux, stop)
-		releaseResources(ctx, c, srv, poolClose)
+		// gRPC service
+		if c.EnableGRPC == "true" {
+			rungRPC(c, p, s, stop)
+		}
+		releaseResources(ctx, c, srv, poolClose, s)
 	} else {
 		// HTTPS server
 		srv := startHTTPSServer(c, mux, stop)
-		releaseResources(ctx, c, srv, poolClose)
+		if c.EnableGRPC == "true" {
+			// gRPC service
+			rungRPC(c, p, s, stop)
+		}
+		releaseResources(ctx, c, srv, poolClose, s)
 	}
+
+}
+
+// Run gRPC server
+func rungRPC(c *configs.Config, p *worker.Pool, s *grpc.Server, stop context.CancelFunc) {
+	listen, err := net.Listen("tcp", ":3201")
+	if err != nil {
+		stop()
+		c.Logger.Fatal(err.Error())
+	}
+	// service register
+	proto.RegisterShortenerServer(s, grpcshortener.New(c.Logger, c.Storage, c.Database, p))
+
+	c.Logger.Info("gRPC server started on :3200")
+
+	// get request from gRPC
+	go func() {
+		if err := s.Serve(listen); err != nil {
+			stop()
+			c.Logger.Fatal(err.Error())
+		}
+	}()
 }
 
 // startHTTPSServer run HTTPS server
@@ -142,7 +179,7 @@ func printBuildInfo() {
 }
 
 // releaseResources free resources
-func releaseResources(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func()) {
+func releaseResources(ctx context.Context, c *configs.Config, srv *http.Server, poolClose func(), s *grpc.Server) {
 	<-ctx.Done()
 	if ctx.Err() != nil {
 		fmt.Printf("Error:%v\n", ctx.Err())
@@ -157,6 +194,10 @@ func releaseResources(ctx context.Context, c *configs.Config, srv *http.Server, 
 			c.Logger.Info("Closing don't close")
 		}
 	}
+	// Close gRPC server
+	s.Stop()
+	c.Logger.Info("gRPC server stopped")
+
 	// Close pool worker
 	poolClose()
 	// Server shutdown

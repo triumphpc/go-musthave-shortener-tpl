@@ -48,10 +48,12 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	h.l.Info("Save origin", zap.String("origin", origin))
 
 	short, err := h.s.Save(helpers.GetContextUserID(r), origin)
+
 	status := http.StatusCreated
 	if errors.Is(err, er.ErrAlreadyHasShort) {
 		status = http.StatusConflict
 	}
+
 	// Prepare response
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(status)
@@ -155,6 +157,7 @@ func (h *Handler) BunchSaveJSON(w http.ResponseWriter, r *http.Request) {
 	for k := range shorts {
 		shorts[k].Short = fmt.Sprintf("%s/%s", baseURL, shorts[k].Short)
 	}
+
 	body, err = json.Marshal(shorts)
 	if err != nil {
 		http.Error(w, er.ErrInternalError.Error(), http.StatusBadRequest)

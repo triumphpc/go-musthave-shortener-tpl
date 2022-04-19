@@ -2,6 +2,7 @@
 package routes
 
 import (
+	"github.com/triumphpc/go-musthave-shortener-tpl/internal/app/handlers/stats"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -22,6 +23,8 @@ func Router(h *handlers.Handler, c *configs.Config, p *worker.Pool) *mux.Router 
 	rtr.HandleFunc("/api/shorten", h.SaveJSON).Methods(http.MethodPost)
 	// Get user session links in JSON
 	rtr.HandleFunc("/api/user/urls", h.GetUrls).Methods(http.MethodGet)
+	// Get user stat
+	rtr.Handle("/api/internal/stats", stats.NewStats(c.Storage, c.Logger)).Methods(http.MethodGet)
 	// Ping db connection
 	rtr.Handle("/ping", ping.NewPing(c.Database, c.Logger)).Methods(http.MethodGet)
 	// Delete links session

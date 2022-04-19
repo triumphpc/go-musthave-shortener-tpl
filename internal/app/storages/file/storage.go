@@ -98,6 +98,18 @@ func (s *UserStorage) Clear() error {
 	return nil
 }
 
+// BunchUpdateAsDeleted implementation
 func (s *UserStorage) BunchUpdateAsDeleted(ctx context.Context, ids []string, userID string) error {
 	return nil
+}
+
+// URLCount implementation
+func (s *UserStorage) URLCount() (counter int) {
+	return 0
+
+}
+
+// UserCount implementation
+func (s *UserStorage) UserCount() (counter int) {
+	return 0
 }

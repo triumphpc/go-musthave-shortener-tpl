@@ -11,6 +11,8 @@ COPY . .
 RUN apt-get update
 RUN apt-get -y install postgresql-client
 
+RUN echo $PATH
+
 # build go app
 RUN go mod download
 RUN go build -o main cmd/shortener/main.go

@@ -4,7 +4,6 @@ package db
 import (
 	"context"
 	"database/sql"
-
 	"github.com/jackc/pgerrcode"
 	"github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -209,4 +208,16 @@ func (s *PostgreSQLStorage) BunchUpdateAsDeleted(ctx context.Context, ids []stri
 	_, err := s.db.ExecContext(ctx, sqlUpdate, userID, idsArr, idsArr)
 
 	return err
+}
+
+// URLCount get saved url in storage
+func (s *PostgreSQLStorage) URLCount() (counter int) {
+	s.db.QueryRow("SELECT count(*) FROM storage.short_links").Scan(&counter)
+	return
+}
+
+// UserCount get uniq url count in storage
+func (s *PostgreSQLStorage) UserCount() (counter int) {
+	s.db.QueryRow("SELECT count(DISTINCT user_id) FROM storage.short_links").Scan(&counter)
+	return
 }
